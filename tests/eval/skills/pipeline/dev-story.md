@@ -1,0 +1,226 @@
+# Skill Test Spec: ags-dev
+
+## Skill Summary
+
+`ags-dev` is the entry point for one story. It checks readiness, loads
+the governing context, presents one approval card, implements within that
+approved scope, verifies the result, and continues to `ags-verify`
+and `ags-verify`. The primary agent owns the work. A specialist
+is consulted only for a bounded question that needs its expertise.
+`ags-verify` owns the final acceptance and Complete status.
+
+## Test Cases
+
+### Case 1: Ready story needs approval before any implementation write
+
+**Fixture:**
+- A story has `Status: Ready`, valid context and dependencies, acceptance
+  criteria, `Handoff Class: Technical`, and a concrete Verification Method.
+- The readiness check returns READY.
+- The governing ADR is Accepted.
+
+**Input:** `ags-dev production/epics/core/story-damage.md`
+
+**Expected behavior:**
+1. Read the story and required context; run story-readiness.
+2. Show one card with story goal, in/out-of-scope files, every criterion, handoff
+   class, and verification method.
+3. Wait for `Approve this story` or `Revise the story`.
+4. Only after approval, record `Story Approval`, mark In Progress, implement,
+   run the prescribed checks, then continue to code-review and story-done.
+5. Do not set Complete; story-done owns that status.
+
+**Assertions:**
+- [ ] No status, source, or test write precedes story approval.
+- [ ] The approval card contains all five required parts.
+- [ ] No reply or `Revise the story` stops implementation.
+- [ ] Approval is recorded in the story and session state before implementation.
+- [ ] The primary agent can implement directly; a programmer spawn is not mandatory.
+- [ ] Routine code and test files within approved scope need no further write prompt.
+- [ ] The same task continues through review and completion handoff.
+
+---
+
+### Case 2: Proposed ADR blocks before the approval card
+
+**Fixture:** A Ready story references an ADR with `Status: Proposed`.
+
+**Input:** `ags-dev production/epics/core/story-damage.md`
+
+**Expected behavior:** Report BLOCKED with the ADR path and recommend
+`ags-architect`. Do not ask the user to approve an unready story,
+change status, or start implementation.
+
+**Assertions:**
+- [ ] The proposed ADR is named in the blocker.
+- [ ] No approval card or implementation write occurs.
+
+---
+
+### Case 3: A legacy story gets a proposed handoff at approval
+
+**Fixture:** A story passes its legacy readiness checks, but has no
+`Handoff Class` or `Verification Method`. Its Logic acceptance criteria
+describe an enemy hit reaction visible in play.
+
+**Input:** `ags-dev production/epics/core/story-hit-reaction.md`
+
+**Expected behavior:** Propose Player-facing and concrete build/test and play
+steps in the approval card. On approval, persist both fields and the approval
+date before writing implementation files. Do not silently classify Logic as
+Technical.
+
+**Assertions:**
+- [ ] The proposed class is Player-facing, not Technical.
+- [ ] The proposed method includes a configured build/test command, play steps,
+      and an evidence path.
+- [ ] Both fields are recorded only after the game maker approves the story.
+
+---
+
+### Case 4: Resumption respects the approval record
+
+**Fixture A:** `Status: In Progress` and `Story Approval` is recorded in the
+story; session state names the same story and has no pending decision.
+
+**Fixture B:** `Status: In Progress` but no approval is recorded.
+
+**Input:** `ags-dev`
+
+**Expected behavior:** For A, resume from session state without repeating the
+story approval checkpoint. For B, show the missing approval record and ask
+before any further implementation edits.
+
+**Assertions:**
+- [ ] A does not ask for the same approval again.
+- [ ] B does not infer approval from In Progress status.
+- [ ] A pending decision in session state prevents automatic resumption.
+
+---
+
+### Case 5: Scope change pauses before the edit
+
+**Fixture:** The approved story excludes `src/networking/`, but meeting a
+criterion now requires changing `src/networking/replication.gd`.
+
+**Input:** Continue `ags-dev` for the approved story.
+
+**Expected behavior:** Stop before changing that file, append the pending
+decision and affected path to `production/session-state/active.md`, present
+the revised scope, and wait. On approval, update the story and approval record
+before resuming.
+
+**Assertions:**
+- [ ] The out-of-scope file is untouched before the new decision.
+- [ ] The pending decision survives a resumed session.
+- [ ] No in-scope implementation is discarded while waiting.
+
+---
+
+### Case 6: Bounded specialist consultation
+
+**Fixture:** A Godot C# story has a specific post-cutoff engine API risk.
+
+**Input:** `ags-dev production/epics/core/story-save.md`
+
+**Expected behavior:** The primary agent owns implementation and may consult
+`godot-csharp-specialist` about the named API risk. It reports whether that
+consultation ran or was skipped and retains the existing engine verification
+checks.
+
+**Assertions:**
+- [ ] No mandatory leadership hierarchy is used for ordinary implementation.
+- [ ] The specialist has a bounded question, not ownership of the whole story.
+- [ ] A missing specialist does not silently remove the engine verification gate.
+
+---
+
+### Case 7: Approval snapshot detects same-day scope drift
+
+**Fixture:** A story is In Progress with `Story Approval: 2026-09-23`.
+The latest session-state approval extract excludes
+`src/networking/replication.gd`. The story text now includes that file,
+but the approval date is still 2026-09-23.
+
+**Input:** Resume with `ags-dev production/epics/core/story-save.md`.
+
+**Expected behavior:** Compare current scope and acceptance criteria against
+the latest approval extract. The matching date alone does not prove the
+changed scope was approved. Pause before editing the newly included file and
+show the revised approval card.
+
+**Assertions:**
+- [ ] Same-day story edits do not bypass the checkpoint.
+- [ ] The latest approved scope and criteria are the comparison baseline.
+- [ ] No out-of-scope edit occurs before revised approval.
+
+---
+
+### Case 8: Handoff fields drift without scope changes
+
+**Fixture:** An approved In Progress visible-combat story has matching scope
+and acceptance criteria. The latest approval extract says
+`Handoff Class: Player-facing` and names play steps. The story file now says
+`Handoff Class: Technical` and removes play from Verification Method.
+
+**Input:** Resume `ags-dev`.
+
+**Expected behavior:** Compare the story's class and verification method
+with the latest approved extract. Stop before edits and request revised
+approval; matching scope and approval date do not authorize the changed
+handoff.
+
+**Assertions:**
+- [ ] Class and method drift each invalidate the recorded approval.
+- [ ] The story cannot resume merely because scope and criteria match.
+- [ ] The revised decision is preserved in session state.
+
+---
+
+### Case 9: Session handoff retains actual evidence
+
+**Fixture:** The approved story has a test file. The configured test
+command exits nonzero and the game run could not launch.
+
+**Input:** Complete `ags-dev` implementation handoff.
+
+**Expected behavior:** The session extract records the exact test command
+and failed result, `Run result: NOT VERIFIED` with its reason, and the
+code-review verdict or `Pending`. Story-done reads these records and
+cannot mistake the test-file path for a passing test.
+
+**Assertions:**
+- [ ] Session state preserves verification command and actual result.
+- [ ] Session state preserves run result and reason.
+- [ ] Session state preserves review outcome or explicitly says Pending.
+
+---
+
+### Case 10: Explicit story path cannot bypass a pending decision
+
+**Fixture:** `production/session-state/active.md` records a pending
+scope decision for `production/epics/core/story-save.md`, including
+`src/networking/replication.gd`. The story is In Progress with an older
+approval snapshot.
+
+**Input:** `ags-dev production/epics/core/story-save.md`
+
+**Expected behavior:** Load session state even though the story path was
+provided. Detect the matching pending decision, report it, and stop before
+any edit. Do not ask a separate "Continue?" question or treat the explicit
+path as approval to resume.
+
+**Assertions:**
+- [ ] Session state is checked for both implicit and explicit story lookup.
+- [ ] A pending decision for that story blocks implementation.
+- [ ] The excluded file remains untouched until revised approval.
+
+---
+
+## Protocol Compliance
+
+- [ ] Every new Ready story runs readiness before approval.
+- [ ] Both story checkpoints require the game maker in every automation mode.
+- [ ] Approved routine file edits require no separate file permission.
+- [ ] The story is never marked Complete by dev-story.
+- [ ] Skipped specialists and verification steps are named in the output.

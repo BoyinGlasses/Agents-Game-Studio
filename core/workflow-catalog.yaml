@@ -1,0 +1,458 @@
+# AGS v2 Workflow Catalog
+# Consumed deterministically by `python .ags/cli.py check artifacts` and `ags-start` / `ags-gate`.
+#
+# Artifact checks:
+#   glob: file glob pattern — complete if >=1 file matches (or min_count)
+#   pattern: regex pattern that must appear in the file (checked after glob)
+#   min_count: minimum matching files required (default: 1)
+#   note: human-readable fallback when completion cannot be auto-detected from disk
+#   any_of: list of alternative {glob, pattern} specs — complete if ANY matches
+#
+# required: true  -> required for phase gate progression
+# required: false -> optional enhancement
+# repeatable: true -> runs multiple times (per system, epic, story, sprint)
+#
+# Phase gates (`ags-gate`) verdicts are ADVISORY unless strict_gate_checks is true.
+
+phases:
+
+  concept:
+    label: "Concept"
+    description: "Develop your game idea into a documented concept"
+    next_phase: systems-design
+    steps:
+      - id: brainstorm
+        name: "Brainstorm"
+        skill: ags-ideate
+        mode: brainstorm
+        required: false
+        description: "Explore the game concept using MDA, verb-first, and player psychology frameworks."
+
+      - id: engine-setup
+        name: "Engine Setup"
+        skill: ags-settings
+        mode: engine
+        required: true
+        artifact:
+          glob: "project.yaml"
+          pattern: "name:[ \\t]*[\"']?(Godot|Unity|Unreal|godot|unity|unreal)"
+        description: "Configure engine, pin version in docs/engine-reference/, set naming conventions and budgets."
+
+      - id: game-concept
+        name: "Game Concept Document"
+        skill: ags-ideate
+        mode: brainstorm
+        required: true
+        artifact:
+          glob: "design/gdd/game-concept.md"
+        description: "Formalize concept with pillars, MDA analysis, visual anchor, and scope tiers."
+
+      - id: design-review-concept
+        name: "Concept Review"
+        skill: ags-design-review
+        mode: single
+        required: false
+        description: "Validate the game concept (recommended before proceeding)."
+
+      - id: art-bible
+        name: "Art Bible"
+        skill: ags-art-ux
+        mode: art-bible
+        required: true
+        artifact:
+          glob: "design/art/art-bible.md"
+        description: "Author the visual identity specification using the Visual Identity Anchor."
+
+      - id: map-systems
+        name: "Systems Map"
+        skill: ags-gdd
+        mode: map-systems
+        required: true
+        artifact:
+          glob: "design/gdd/systems-index.md"
+        description: "Decompose concept into systems with dependency ordering and priority tiers."
+
+  systems-design:
+    label: "Systems Design"
+    description: "Author a GDD for each system in the systems index"
+    next_phase: technical-setup
+    steps:
+      - id: design-system
+        name: "System GDDs"
+        skill: ags-gdd
+        mode: design-system
+        required: true
+        repeatable: true
+        artifact:
+          note: "Check design/gdd/systems-index.md — each MVP system needs Status: Approved"
+        description: "Author per-system GDDs (section-by-section or quick-design per workflow tier)."
+
+      - id: design-review
+        name: "Per-System Design Review"
+        skill: ags-design-review
+        mode: single
+        required: true
+        repeatable: true
+        description: "Validate each GDD (required sections per workflow tier, no MAJOR REVISION verdict)."
+
+      - id: review-all-gdds
+        name: "Cross-GDD Review"
+        skill: ags-design-review
+        mode: review-all
+        required: true
+        artifact:
+          glob: "design/gdd/gdd-cross-review-*.md"
+        description: "Holistic consistency check and design theory review across all GDDs simultaneously."
+
+      - id: consistency-check
+        name: "Consistency Check"
+        skill: ags-design-review
+        mode: consistency
+        required: false
+        repeatable: true
+        description: "Scan all GDDs for contradictions, undefined references, and mechanic conflicts."
+
+  technical-setup:
+    label: "Technical Setup"
+    description: "Architecture decisions, visual identity specification, accessibility foundations, engine validation"
+    next_phase: pre-production
+    steps:
+      - id: create-architecture
+        name: "Architecture Document"
+        skill: ags-architect
+        mode: architecture
+        required: true
+        artifact:
+          glob: "docs/architecture/architecture.md"
+        description: "Author the master architecture document covering all systems."
+
+      - id: architecture-decision
+        name: "Architecture Decisions (ADRs)"
+        skill: ags-architect
+        mode: adr
+        required: true
+        repeatable: true
+        artifact:
+          glob: "docs/architecture/adr-*.md"
+          min_count: 3
+        description: "Document key technical decisions as ADRs. Minimum 3 Foundation-layer ADRs required at full/standard."
+
+      - id: architecture-review
+        name: "Architecture Review"
+        skill: ags-arch-review
+        mode: review
+        required: true
+        artifact:
+          glob: "docs/architecture/architecture-review-*.md"
+        description: "Validate completeness, dependency ordering, and engine compatibility."
+
+      - id: control-manifest
+        name: "Control Manifest"
+        skill: ags-architect
+        mode: manifest
+        required: true
+        artifact:
+          glob: "docs/architecture/control-manifest.md"
+        description: "Flat programmer rules sheet generated from all Accepted ADRs."
+
+      - id: accessibility-doc
+        name: "Accessibility Requirements"
+        skill: ags-art-ux
+        mode: accessibility
+        required: true
+        artifact:
+          glob: "design/accessibility-requirements.md"
+        description: "Commit accessibility tier (Basic/Standard/Comprehensive/Exemplary) and feature matrix."
+
+  pre-production:
+    label: "Pre-Production"
+    description: "Visual entity inventory, UX specs, asset specs, prototype core mechanic, plan stories, validate fun"
+    next_phase: production
+    steps:
+      - id: entity-inventory
+        name: "Visual Entity & Screen Inventory"
+        skill: ags-art-ux
+        mode: entity-inventory
+        required: false
+        artifact:
+          glob: "design/assets/entity-inventory.md"
+        description: "Enumerate entities, UI screens, and HUD elements as source of truth for art and UX."
+
+      - id: asset-spec
+        name: "Asset Specs"
+        skill: ags-art-ux
+        mode: asset-spec
+        required: false
+        repeatable: true
+        artifact:
+          glob: "design/assets/asset-manifest.md"
+        description: "Generate per-asset visual specifications and production prompts."
+
+      - id: ux-design
+        name: "UX Specs (key screens)"
+        skill: ags-art-ux
+        mode: ux-design
+        required: true
+        repeatable: true
+        artifact:
+          glob: "design/ux/*.md"
+          min_count: 3
+        description: "Author UX specs for key screens (minimum: main menu, core HUD, pause menu)."
+
+      - id: ux-review
+        name: "UX Review"
+        skill: ags-art-ux
+        mode: ux-review
+        required: true
+        description: "Validate key screen UX specs for GDD alignment and accessibility compliance."
+
+      - id: prototype
+        name: "Prototype"
+        skill: ags-ideate
+        mode: prototype
+        required: false
+        artifact:
+          glob: "prototypes/*-concept/REPORT.md"
+          min_count: 1
+        description: "Build a throwaway prototype to validate the core mechanic before committing to production."
+
+      - id: create-epics
+        name: "Create Epics"
+        skill: ags-plan
+        mode: epics
+        required: true
+        repeatable: true
+        artifact:
+          glob: "production/epics/*/EPIC.md"
+          min_count: 1
+        description: "Translate GDDs and ADRs into layer-ordered epics (Foundation, Core, Feature, Presentation)."
+
+      - id: create-stories
+        name: "Create Stories"
+        skill: ags-plan
+        mode: stories
+        required: true
+        repeatable: true
+        artifact:
+          glob: "production/epics/**/*.md"
+          min_count: 2
+        description: "Break each epic into implementable story files with Handoff Class and verification method."
+
+      - id: test-setup
+        name: "Test Framework Setup"
+        skill: ags-qa
+        mode: setup
+        required: false
+        artifact:
+          note: "Check tests/ directory for engine-specific test framework scaffold"
+        description: "Scaffold the engine test framework and CI pipeline before the first sprint."
+
+      - id: sprint-plan
+        name: "First Sprint Plan"
+        skill: ags-plan
+        mode: sprint
+        required: true
+        artifact:
+          glob: "production/sprints/sprint-*.md"
+          min_count: 1
+        description: "Plan the first sprint with prioritized stories from epics."
+
+      - id: vertical-slice
+        name: "Vertical Slice"
+        skill: ags-ideate
+        mode: vertical-slice
+        required: false
+        artifact:
+          glob: "prototypes/*-vertical-slice/REPORT.md"
+          min_count: 1
+        description: "Build and playtest an end-to-end vertical slice of the core loop."
+
+  production:
+    label: "Production"
+    description: "Sprint-based feature development — pick, implement, verify, close stories"
+    next_phase: polish
+    steps:
+      - id: sprint-plan
+        name: "Sprint Plan"
+        skill: ags-plan
+        mode: sprint
+        required: true
+        repeatable: true
+        artifact:
+          glob: "production/sprints/sprint-*.md"
+        description: "Plan the current sprint with prioritized, ready stories."
+
+      - id: story-readiness
+        name: "Story Readiness Check"
+        skill: ags-dev
+        mode: readiness
+        required: false
+        description: "Validate a story is implementation-ready before starting."
+
+      - id: implement
+        name: "Implement Stories"
+        skill: ags-dev
+        mode: implement
+        required: true
+        repeatable: true
+        artifact:
+          note: "Check code root (src/, Assets/, or Source/) and production/epics/**/*.md for In Progress stories"
+        description: "Execute Story Checkpoint #1, implement within approved scope, gather evidence."
+
+      - id: code-review
+        name: "Code Review"
+        skill: ags-verify
+        mode: code-review
+        required: false
+        repeatable: true
+        description: "Read-only architectural and Game-Native rubric code review after story implementation."
+
+      - id: story-done
+        name: "Story Done Review"
+        skill: ags-verify
+        mode: story-done
+        required: true
+        repeatable: true
+        description: "Verify acceptance criteria, verify receipt hash, complete Story Checkpoint #2."
+
+      - id: qa-plan
+        name: "QA Plan"
+        skill: ags-qa
+        mode: plan
+        required: false
+        repeatable: true
+        description: "Generate QA test cases per epic or sprint."
+
+      - id: bug-report
+        name: "Bug Report / Triage"
+        skill: ags-bugs
+        mode: report
+        required: false
+        repeatable: true
+        description: "Log structured bug reports and triage open backlog."
+
+      - id: retrospective
+        name: "Sprint Retrospective"
+        skill: ags-plan
+        mode: retro
+        required: false
+        repeatable: true
+        description: "Capture what worked and what to change at sprint close."
+
+      - id: team-feature
+        name: "Team Orchestration (optional)"
+        skill: ags-team
+        mode: feature
+        required: false
+        repeatable: true
+        description: "Coordinate domain specialists (combat, narrative, ui, audio, level, live-ops, qa)."
+
+      - id: scope-check
+        name: "Scope Check"
+        skill: ags-arch-review
+        mode: scope
+        required: false
+        repeatable: true
+        artifact:
+          glob: "production/sprints/sprint-*.md"
+          note: "Run when stories are added mid-sprint, or before retrospectives"
+        description: "Detect scope creep by comparing sprint scope to original epic scope."
+
+      - id: sprint-status
+        name: "Sprint Status"
+        skill: ags-plan
+        mode: status
+        required: false
+        description: "Quick snapshot of sprint progress."
+
+  polish:
+    label: "Polish"
+    description: "Performance, balance, playtesting, localization, bug fixing"
+    next_phase: release
+    steps:
+      - id: perf-profile
+        name: "Performance Profile"
+        skill: ags-diagnose
+        mode: perf
+        required: false
+        description: "Profile CPU/GPU/memory against project.yaml performance budgets."
+
+      - id: balance-check
+        name: "Balance Check"
+        skill: ags-design-review
+        mode: balance
+        required: false
+        description: "Analyze game balance formulas and progression curves for outliers."
+
+      - id: asset-audit
+        name: "Asset Audit"
+        skill: ags-art-ux
+        mode: asset-audit
+        required: false
+        description: "Verify naming conventions, formats, and memory/size budgets."
+
+      - id: playtest-polish
+        name: "Playtest Sessions (x3)"
+        skill: ags-qa
+        mode: playtest
+        required: true
+        artifact:
+          glob: "production/qa/playtests/*.md"
+          min_count: 3
+        description: "Cover new player experience, mid-game systems, and difficulty curve."
+
+      - id: team-polish
+        name: "Polish Team Pass"
+        skill: ags-team
+        mode: polish
+        required: true
+        description: "Coordinated polish pass across performance, audio, visual, and UX."
+
+  release:
+    label: "Release"
+    description: "Launch preparation, certification, and ship"
+    next_phase: null
+    steps:
+      - id: release-checklist
+        name: "Release Checklist"
+        skill: ags-release
+        mode: release-checklist
+        required: true
+        description: "Pre-release validation across code, content, store, and compliance."
+
+      - id: patch-notes
+        name: "Patch Notes"
+        skill: ags-release
+        mode: patch-notes
+        required: false
+        description: "Generate player-facing patch notes from git history and sprint data."
+
+      - id: changelog
+        name: "Changelog"
+        skill: ags-release
+        mode: changelog
+        required: false
+        description: "Generate internal changelog from commits, sprints, and design docs."
+
+      - id: launch-checklist
+        name: "Launch Checklist"
+        skill: ags-release
+        mode: launch-checklist
+        required: true
+        description: "Final launch readiness — last check before shipping to players."
+
+cross_cutting_skills:
+  - skill: ags-new-game
+    role: "Initialize a new AGS v2 game project from the studio core for selected engine and harnesses."
+  - skill: ags-start
+    role: "Guided onboarding, stage detection, contributor onboarding, and next-step help."
+  - skill: ags-settings
+    role: "Read/update project.yaml or project.local.yaml, engine configuration, and reference refreshes."
+  - skill: ags-adopt
+    role: "Adopt existing repositories and reverse-document code/prototypes into GDDs and ADRs."
+  - skill: ags-gate
+    role: "Run phase gate checks across Concept -> Release using artifact-check and director gates."
+  - skill: ags-localize
+    role: "Manage localization extraction, string tables, pseudolocalization, and RTL/CJK/pluralization checks."
+  - skill: ags-skill-ops
+    role: "Validate and improve AGS v2 skills and agent role definitions."

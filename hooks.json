@@ -1,0 +1,42 @@
+{
+  "agents-game-studio": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python ags_cli.py hook --harness antigravity SessionStart",
+        "timeout": 10
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ags_cli.py hook --harness antigravity PreToolUse",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "edit_file|write_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ags_cli.py hook --harness antigravity PostToolUse",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python ags_cli.py hook --harness antigravity Stop",
+        "timeout": 10
+      }
+    ]
+  }
+}

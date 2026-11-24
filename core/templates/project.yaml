@@ -1,0 +1,20 @@
+# Agents Game Studio (AGS v2) project configuration — single source of truth.
+# Local personal overrides belong in `project.local.yaml` (gitignored).
+# Run `python .ags/cli.py preflight ags-start` or `ags-settings` to inspect resolved config.
+
+schema_version: 1
+
+framework:
+  version: 2.0.0
+  last_upgraded: 2026-11-24
+
+# NOTE: This template ships with no `modes:` block, and the six knobs below
+# must never be pre-seeded here unless explicitly chosen by the developer.
+#
+# `ags-start` adds `modes.rigor` and `modes.automation` here during onboarding.
+# The six knobs fronted by `modes.rigor` (`modes.review_mode`, `modes.workflow`,
+# `docs.density`, `qa.level`, `modes.story_granularity`, `team.size`) stay unset
+# here so changing `modes.rigor` moves all six together unless overridden explicitly.
+#
+# Per-developer experience overrides belong in `project.local.yaml` (gitignored).
+# Precedence: project.local.yaml -> project.yaml -> modes.rigor expansion -> defaults.

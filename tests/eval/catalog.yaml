@@ -1,0 +1,670 @@
+version: 3
+framework: agents-game-studio-v2
+last_updated: "2026-11-24"
+
+skills:
+  - name: ags-gate
+    skill_path: core/skills/ags-gate/SKILL.md
+    spec: tests/eval/skills/gate/gate-check.md
+    legacy_specs:
+      - tests/eval/skills/gate/gate-check.md
+    priority: critical
+    category: gate
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-design-review
+    skill_path: core/skills/ags-design-review/SKILL.md
+    spec: tests/eval/skills/review/design-review.md
+    legacy_specs:
+      - tests/eval/skills/review/design-review.md
+      - tests/eval/skills/review/review-all-gdds.md
+      - tests/eval/skills/analysis/consistency-check.md
+      - tests/eval/skills/analysis/balance-check.md
+      - tests/eval/skills/analysis/content-audit.md
+      - tests/eval/skills/pipeline/propagate-design-change.md
+    priority: critical
+    category: review
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-dev
+    skill_path: core/skills/ags-dev/SKILL.md
+    spec: tests/eval/skills/pipeline/dev-story.md
+    legacy_specs:
+      - tests/eval/skills/readiness/story-readiness.md
+      - tests/eval/skills/pipeline/dev-story.md
+    priority: critical
+    category: story-harness
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-verify
+    skill_path: core/skills/ags-verify/SKILL.md
+    spec: tests/eval/skills/readiness/story-done.md
+    legacy_specs:
+      - tests/eval/skills/analysis/code-review.md
+      - tests/eval/skills/readiness/story-done.md
+      - tests/eval/skills/analysis/test-evidence-review.md
+    priority: critical
+    category: story-harness
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-arch-review
+    skill_path: core/skills/ags-arch-review/SKILL.md
+    spec: tests/eval/skills/review/architecture-review.md
+    legacy_specs:
+      - tests/eval/skills/review/architecture-review.md
+      - tests/eval/skills/analysis/tech-debt.md
+      - tests/eval/skills/analysis/scope-check.md
+    priority: critical
+    category: review
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-architect
+    skill_path: core/skills/ags-architect/SKILL.md
+    spec: tests/eval/skills/authoring/create-architecture.md
+    legacy_specs:
+      - tests/eval/skills/authoring/create-architecture.md
+      - tests/eval/skills/authoring/architecture-decision.md
+      - tests/eval/skills/pipeline/create-control-manifest.md
+    priority: high
+    category: authoring
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-gdd
+    skill_path: core/skills/ags-gdd/SKILL.md
+    spec: tests/eval/skills/authoring/design-system.md
+    legacy_specs:
+      - tests/eval/skills/pipeline/map-systems.md
+      - tests/eval/skills/authoring/design-system.md
+      - tests/eval/skills/authoring/quick-design.md
+    priority: high
+    category: authoring
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-art-ux
+    skill_path: core/skills/ags-art-ux/SKILL.md
+    spec: tests/eval/skills/authoring/art-bible.md
+    legacy_specs:
+      - tests/eval/skills/authoring/art-bible.md
+      - tests/eval/skills/utility/asset-spec.md
+      - tests/eval/skills/analysis/asset-audit.md
+      - tests/eval/skills/authoring/ux-design.md
+      - tests/eval/skills/authoring/ux-review.md
+    priority: high
+    category: authoring
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-plan
+    skill_path: core/skills/ags-plan/SKILL.md
+    spec: tests/eval/skills/pipeline/create-epics.md
+    legacy_specs:
+      - tests/eval/skills/pipeline/create-epics.md
+      - tests/eval/skills/pipeline/create-stories.md
+      - tests/eval/skills/analysis/estimate.md
+      - tests/eval/skills/sprint/sprint-plan.md
+      - tests/eval/skills/sprint/sprint-status.md
+      - tests/eval/skills/sprint/milestone-review.md
+      - tests/eval/skills/sprint/retrospective.md
+    priority: high
+    category: pipeline
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-ideate
+    skill_path: core/skills/ags-ideate/SKILL.md
+    spec: tests/eval/skills/utility/brainstorm.md
+    legacy_specs:
+      - tests/eval/skills/utility/brainstorm.md
+      - tests/eval/skills/utility/prototype.md
+    priority: high
+    category: authoring
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-team
+    skill_path: core/skills/ags-team/SKILL.md
+    spec: tests/eval/skills/team/team-combat.md
+    legacy_specs:
+      - tests/eval/skills/team/team-audio.md
+      - tests/eval/skills/team/team-combat.md
+      - tests/eval/skills/team/team-level.md
+      - tests/eval/skills/team/team-live-ops.md
+      - tests/eval/skills/team/team-narrative.md
+      - tests/eval/skills/team/team-polish.md
+      - tests/eval/skills/team/team-qa.md
+      - tests/eval/skills/team/team-release.md
+      - tests/eval/skills/team/team-ui.md
+    priority: medium
+    category: team
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-qa
+    skill_path: core/skills/ags-qa/SKILL.md
+    spec: tests/eval/skills/utility/qa-plan.md
+    legacy_specs:
+      - tests/eval/skills/utility/test-setup.md
+      - tests/eval/skills/utility/test-helpers.md
+      - tests/eval/skills/utility/qa-plan.md
+      - tests/eval/skills/utility/smoke-check.md
+      - tests/eval/skills/utility/regression-suite.md
+      - tests/eval/skills/utility/soak-test.md
+      - tests/eval/skills/analysis/test-flakiness.md
+      - tests/eval/skills/utility/playtest-report.md
+    priority: medium
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-bugs
+    skill_path: core/skills/ags-bugs/SKILL.md
+    spec: tests/eval/skills/utility/bug-report.md
+    legacy_specs:
+      - tests/eval/skills/utility/bug-report.md
+      - tests/eval/skills/utility/bug-triage.md
+    priority: medium
+    category: analysis
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-diagnose
+    skill_path: core/skills/ags-diagnose/SKILL.md
+    spec: tests/eval/skills/analysis/perf-profile.md
+    legacy_specs:
+      - tests/eval/skills/analysis/perf-profile.md
+      - tests/eval/skills/analysis/security-audit.md
+    priority: medium
+    category: analysis
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-start
+    skill_path: core/skills/ags-start/SKILL.md
+    spec: tests/eval/skills/utility/start.md
+    legacy_specs:
+      - tests/eval/skills/utility/start.md
+      - tests/eval/skills/utility/help.md
+      - tests/eval/skills/utility/project-stage-detect.md
+      - tests/eval/skills/utility/onboard.md
+    priority: medium
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-settings
+    skill_path: core/skills/ags-settings/SKILL.md
+    spec: tests/eval/skills/utility/setup-engine.md
+    legacy_specs:
+      - tests/eval/skills/utility/setup-engine.md
+    priority: medium
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-adopt
+    skill_path: core/skills/ags-adopt/SKILL.md
+    spec: tests/eval/skills/utility/adopt.md
+    legacy_specs:
+      - tests/eval/skills/utility/adopt.md
+      - tests/eval/skills/utility/reverse-document.md
+    priority: medium
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-release
+    skill_path: core/skills/ags-release/SKILL.md
+    spec: tests/eval/skills/utility/release-checklist.md
+    legacy_specs:
+      - tests/eval/skills/utility/release-checklist.md
+      - tests/eval/skills/utility/launch-checklist.md
+      - tests/eval/skills/sprint/changelog.md
+      - tests/eval/skills/sprint/patch-notes.md
+      - tests/eval/skills/utility/day-one-patch.md
+      - tests/eval/skills/utility/hotfix.md
+    priority: medium
+    category: sprint
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-localize
+    skill_path: core/skills/ags-localize/SKILL.md
+    spec: tests/eval/skills/utility/localize.md
+    legacy_specs:
+      - tests/eval/skills/utility/localize.md
+    priority: low
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-skill-ops
+    skill_path: core/skills/ags-skill-ops/SKILL.md
+    spec: tests/eval/skills/utility/skill-test.md
+    legacy_specs:
+      - tests/eval/skills/utility/skill-test.md
+      - tests/eval/skills/utility/skill-improve.md
+    priority: medium
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+  - name: ags-new-game
+    skill_path: core/skills/ags-new-game/SKILL.md
+    spec: ""
+    legacy_specs: []
+    priority: medium
+    category: utility
+    last_static: ""
+    last_static_result: ""
+    last_spec: ""
+    last_spec_result: ""
+    last_category: ""
+    last_category_result: ""
+
+agents:
+  # Core Read-Only Roles (5)
+  - name: scout
+    role_path: core/agents/core/scout.md
+    spec: tests/eval/agents/core/scout.md
+    role_kind: core
+    sandbox_mode: read-only
+    model_reasoning_effort: low
+
+  - name: creative-director
+    role_path: core/agents/core/creative-director.md
+    spec: tests/eval/agents/directors/creative-director.md
+    role_kind: core
+    sandbox_mode: read-only
+    model_reasoning_effort: high
+
+  - name: technical-director
+    role_path: core/agents/core/technical-director.md
+    spec: tests/eval/agents/directors/technical-director.md
+    role_kind: core
+    sandbox_mode: read-only
+    model_reasoning_effort: high
+
+  - name: qa-lead
+    role_path: core/agents/core/qa-lead.md
+    spec: tests/eval/agents/leads/qa-lead.md
+    role_kind: core
+    sandbox_mode: read-only
+    model_reasoning_effort: high
+
+  - name: code-reviewer
+    role_path: core/agents/core/code-reviewer.md
+    spec: tests/eval/agents/core/code-reviewer.md
+    role_kind: core
+    sandbox_mode: read-only
+    model_reasoning_effort: high
+
+  # Core Workspace-Write Roles (7)
+  - name: producer
+    role_path: core/agents/core/producer.md
+    spec: tests/eval/agents/directors/producer.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: medium
+
+  - name: game-designer
+    role_path: core/agents/core/game-designer.md
+    spec: tests/eval/agents/leads/game-designer.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: high
+
+  - name: art-ux-director
+    role_path: core/agents/core/art-ux-director.md
+    spec: tests/eval/agents/directors/art-director.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: medium
+
+  - name: prototyper
+    role_path: core/agents/core/prototyper.md
+    spec: tests/eval/agents/specialists/prototyper.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: medium
+
+  - name: gameplay-coder
+    role_path: core/agents/core/gameplay-coder.md
+    spec: tests/eval/agents/specialists/gameplay-programmer.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: medium
+
+  - name: tech-artist
+    role_path: core/agents/core/tech-artist.md
+    spec: tests/eval/agents/specialists/technical-artist.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: medium
+
+  - name: test-engineer
+    role_path: core/agents/core/test-engineer.md
+    spec: tests/eval/agents/qa/qa-tester.md
+    role_kind: core
+    sandbox_mode: workspace-write
+    model_reasoning_effort: medium
+
+  # Engine Specialists — Godot (5)
+  - name: godot-specialist
+    role_path: core/agents/engines/godot/godot-specialist.md
+    spec: tests/eval/agents/engine/godot/godot-specialist.md
+    role_kind: engine
+    engine: godot
+    sandbox_mode: workspace-write
+
+  - name: godot-gdscript-specialist
+    role_path: core/agents/engines/godot/godot-gdscript-specialist.md
+    spec: tests/eval/agents/engine/godot/godot-gdscript-specialist.md
+    role_kind: engine
+    engine: godot
+    sandbox_mode: workspace-write
+
+  - name: godot-csharp-specialist
+    role_path: core/agents/engines/godot/godot-csharp-specialist.md
+    spec: tests/eval/agents/engine/godot/godot-csharp-specialist.md
+    role_kind: engine
+    engine: godot
+    sandbox_mode: workspace-write
+
+  - name: godot-shader-specialist
+    role_path: core/agents/engines/godot/godot-shader-specialist.md
+    spec: tests/eval/agents/engine/godot/godot-shader-specialist.md
+    role_kind: engine
+    engine: godot
+    sandbox_mode: workspace-write
+
+  - name: godot-gdextension-specialist
+    role_path: core/agents/engines/godot/godot-gdextension-specialist.md
+    spec: tests/eval/agents/engine/godot/godot-gdextension-specialist.md
+    role_kind: engine
+    engine: godot
+    sandbox_mode: workspace-write
+
+  # Engine Specialists — Unity (5)
+  - name: unity-specialist
+    role_path: core/agents/engines/unity/unity-specialist.md
+    spec: tests/eval/agents/engine/unity/unity-specialist.md
+    role_kind: engine
+    engine: unity
+    sandbox_mode: workspace-write
+
+  - name: unity-ui-specialist
+    role_path: core/agents/engines/unity/unity-ui-specialist.md
+    spec: tests/eval/agents/engine/unity/unity-ui-specialist.md
+    role_kind: engine
+    engine: unity
+    sandbox_mode: workspace-write
+
+  - name: unity-shader-specialist
+    role_path: core/agents/engines/unity/unity-shader-specialist.md
+    spec: tests/eval/agents/engine/unity/unity-shader-specialist.md
+    role_kind: engine
+    engine: unity
+    sandbox_mode: workspace-write
+
+  - name: unity-dots-specialist
+    role_path: core/agents/engines/unity/unity-dots-specialist.md
+    spec: tests/eval/agents/engine/unity/unity-dots-specialist.md
+    role_kind: engine
+    engine: unity
+    sandbox_mode: workspace-write
+
+  - name: unity-addressables-specialist
+    role_path: core/agents/engines/unity/unity-addressables-specialist.md
+    spec: tests/eval/agents/engine/unity/unity-addressables-specialist.md
+    role_kind: engine
+    engine: unity
+    sandbox_mode: workspace-write
+
+  # Engine Specialists — Unreal (5)
+  - name: unreal-specialist
+    role_path: core/agents/engines/unreal/unreal-specialist.md
+    spec: tests/eval/agents/engine/unreal/unreal-specialist.md
+    role_kind: engine
+    engine: unreal
+    sandbox_mode: workspace-write
+
+  - name: ue-blueprint-specialist
+    role_path: core/agents/engines/unreal/ue-blueprint-specialist.md
+    spec: tests/eval/agents/engine/unreal/ue-blueprint-specialist.md
+    role_kind: engine
+    engine: unreal
+    sandbox_mode: workspace-write
+
+  - name: ue-gas-specialist
+    role_path: core/agents/engines/unreal/ue-gas-specialist.md
+    spec: tests/eval/agents/engine/unreal/ue-gas-specialist.md
+    role_kind: engine
+    engine: unreal
+    sandbox_mode: workspace-write
+
+  - name: ue-umg-specialist
+    role_path: core/agents/engines/unreal/ue-umg-specialist.md
+    spec: tests/eval/agents/engine/unreal/ue-umg-specialist.md
+    role_kind: engine
+    engine: unreal
+    sandbox_mode: workspace-write
+
+  - name: ue-replication-specialist
+    role_path: core/agents/engines/unreal/ue-replication-specialist.md
+    spec: tests/eval/agents/engine/unreal/ue-replication-specialist.md
+    role_kind: engine
+    engine: unreal
+    sandbox_mode: workspace-write
+
+  # Domain Lenses (25)
+  - name: accessibility-specialist
+    role_path: core/agents/lenses/accessibility-specialist.md
+    spec: tests/eval/agents/qa/accessibility-specialist.md
+    role_kind: lens
+
+  - name: ai-programmer
+    role_path: core/agents/lenses/ai-programmer.md
+    spec: tests/eval/agents/specialists/ai-programmer.md
+    role_kind: lens
+
+  - name: analytics-engineer
+    role_path: core/agents/lenses/analytics-engineer.md
+    spec: tests/eval/agents/operations/analytics-engineer.md
+    role_kind: lens
+
+  - name: art-director
+    role_path: core/agents/lenses/art-director.md
+    spec: tests/eval/agents/directors/art-director.md
+    role_kind: lens
+
+  - name: audio-director
+    role_path: core/agents/lenses/audio-director.md
+    spec: tests/eval/agents/leads/audio-director.md
+    role_kind: lens
+
+  - name: community-manager
+    role_path: core/agents/lenses/community-manager.md
+    spec: tests/eval/agents/operations/community-manager.md
+    role_kind: lens
+
+  - name: devops-engineer
+    role_path: core/agents/lenses/devops-engineer.md
+    spec: tests/eval/agents/operations/devops-engineer.md
+    role_kind: lens
+
+  - name: economy-designer
+    role_path: core/agents/lenses/economy-designer.md
+    spec: tests/eval/agents/operations/economy-designer.md
+    role_kind: lens
+
+  - name: engine-programmer
+    role_path: core/agents/lenses/engine-programmer.md
+    spec: tests/eval/agents/specialists/engine-programmer.md
+    role_kind: lens
+
+  - name: lead-programmer
+    role_path: core/agents/lenses/lead-programmer.md
+    spec: tests/eval/agents/leads/lead-programmer.md
+    role_kind: lens
+
+  - name: level-designer
+    role_path: core/agents/lenses/level-designer.md
+    spec: tests/eval/agents/leads/level-designer.md
+    role_kind: lens
+
+  - name: live-ops-designer
+    role_path: core/agents/lenses/live-ops-designer.md
+    spec: tests/eval/agents/operations/live-ops-designer.md
+    role_kind: lens
+
+  - name: localization-lead
+    role_path: core/agents/lenses/localization-lead.md
+    spec: tests/eval/agents/operations/localization-lead.md
+    role_kind: lens
+
+  - name: narrative-director
+    role_path: core/agents/lenses/narrative-director.md
+    spec: tests/eval/agents/leads/narrative-director.md
+    role_kind: lens
+
+  - name: network-programmer
+    role_path: core/agents/lenses/network-programmer.md
+    spec: tests/eval/agents/specialists/network-programmer.md
+    role_kind: lens
+
+  - name: performance-analyst
+    role_path: core/agents/lenses/performance-analyst.md
+    spec: tests/eval/agents/specialists/performance-analyst.md
+    role_kind: lens
+
+  - name: release-manager
+    role_path: core/agents/lenses/release-manager.md
+    spec: tests/eval/agents/operations/release-manager.md
+    role_kind: lens
+
+  - name: security-engineer
+    role_path: core/agents/lenses/security-engineer.md
+    spec: tests/eval/agents/qa/security-engineer.md
+    role_kind: lens
+
+  - name: sound-designer
+    role_path: core/agents/lenses/sound-designer.md
+    spec: tests/eval/agents/specialists/sound-designer.md
+    role_kind: lens
+
+  - name: systems-designer
+    role_path: core/agents/lenses/systems-designer.md
+    spec: tests/eval/agents/leads/systems-designer.md
+    role_kind: lens
+
+  - name: tools-programmer
+    role_path: core/agents/lenses/tools-programmer.md
+    spec: tests/eval/agents/specialists/tools-programmer.md
+    role_kind: lens
+
+  - name: ui-programmer
+    role_path: core/agents/lenses/ui-programmer.md
+    spec: tests/eval/agents/specialists/ui-programmer.md
+    role_kind: lens
+
+  - name: ux-designer
+    role_path: core/agents/lenses/ux-designer.md
+    spec: tests/eval/agents/specialists/ux-designer.md
+    role_kind: lens
+
+  - name: world-builder
+    role_path: core/agents/lenses/world-builder.md
+    spec: tests/eval/agents/specialists/world-builder.md
+    role_kind: lens
+
+  - name: writer
+    role_path: core/agents/lenses/writer.md
+    spec: tests/eval/agents/specialists/writer.md
+    role_kind: lens

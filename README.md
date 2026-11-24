@@ -1,169 +1,177 @@
-# Codex Game Studio
+# Agents Game Studio (AGS v2.0)
 
-**Turn OpenAI Codex into your AI game development studio.**
+**Multi-harness, engine-aware AI game studio framework.**
 
-Plan, prototype, build, review, and ship games with coordinated AI specialists and reusable workflows.
+Plan, design, architect, build, verify, and ship games across **Codex**, **Antigravity**, **OpenCode**, **Claude Code**, and **Universal `AGENTS.md` harnesses** from a single canonical studio core and a zero-dependency Python runtime.
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![74 Skills](https://img.shields.io/badge/workflows-74-green.svg)](skills/) [![49 Agents](https://img.shields.io/badge/agent_roles-49-blueviolet.svg)](assets/template/.codex/agents/)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![21 Skills](https://img.shields.io/badge/skills-21-green.svg)](core/skills/) [![52 Roles](https://img.shields.io/badge/studio_roles-12_core_%2B_15_engine_%2B_25_lenses-blueviolet.svg)](core/agents/) [![28 Gates](https://img.shields.io/badge/director_gates-28-orange.svg)](core/gates/)
 
-*An unofficial Codex adaptation of [Claude Code Game Studios](https://github.com/Donchitos/Claude-Code-Game-Studios) by Donchitos.*
+*Evolved from [BoyinGlasses/Codex-Game-Studio](https://github.com/BoyinGlasses/Codex-Game-Studio) and [Donchitos/Claude-Code-Game-Studios](https://github.com/Donchitos/Claude-Code-Game-Studios).*
 
-## Why Codex Game Studio?
+---
 
-Building a game with one AI assistant can get messy: design decisions disappear into chat history, implementation drifts from the original idea, and testing happens too late. The original [Claude Code Game Studios](https://github.com/Donchitos/Claude-Code-Game-Studios) project addresses this with a studio hierarchy, specialist roles, and quality checkpoints.
+## Why AGS v2.0?
 
-**Codex Game Studio brings that structure to OpenAI Codex.** It provides a workflow from the first game idea to a playable build while keeping you responsible for decisions and verification. This is a set of skills and a starter template, not a game engine or finished game.
+Building a game with AI assistants breaks down when design decisions vanish into chat history, skills prompt before every routine file edit, reviewers modify code they were supposed to audit, or engine versions drift past model training cutoffs.
 
-## What's included?
+**Agents Game Studio v2.0** solves this with a **Closed-Loop Harness**:
 
-| Component | Count | Purpose |
-| --- | ---: | --- |
-| Workflow skills | 74 | Design, architecture, implementation, QA, and release |
-| Specialist roles | 49 | Directors, department leads, and domain specialists |
-| Project rules | 13 | Coding and design conventions routed through `AGENTS.md` |
-| Starter template | 1 | Project structure for Godot, Unity, or Unreal |
-| Codex hooks | Included | Session and validation hooks with a Codex adapter |
+```text
+Hooks (ags/hooks.py) ──> Thin AGENTS.md Routing ──> 21 Skills (ags-*)
+        ▲                                                   │
+        │                                                   ▼
+Receipts (.ags/state/receipt.json) ◄── Core + Engine + Lens Roles (.ags/roles/)
+```
 
-The plugin also provides `$ccgs-new-game` to create a new project. Skill names keep the `$ccgs-*` prefix for compatibility with existing workflows.
+- **1 Core, 4 Harness Adapters + Universal Standard**: One `core/` repository compiles cleanly into Codex, Antigravity, OpenCode, Claude Code, and universal `AGENTS.md` + `.agents/skills/` layouts.
+- **Zero-Dependency Python 3.10+ Runtime**: Replaces fragile Bash/Git-Bash scripts with pure-Python stdlib tooling (`ags/`), bundled directly into every initialized game project as a standalone `.ags/cli.py`.
+- **Single-Engine Isolation**: Choose `--engine godot | unity | unreal | none` at init time; only your engine's 5 specialists and `docs/engine-reference/<engine>/` snapshot are installed.
+- **Story Checkpoint Harness**: Replaces per-file write interruptions with two clean checkpoints — **Checkpoint 1** (goal, scope, acceptance criteria, `Handoff Class`, verification method) and **Checkpoint 2** (receipt + evidence + play confirmation before `Status: Complete`).
+- **Honest `NOT ASSESSED` & Anti-Hallucination Receipts**: `story_gate` blocks `Status: Complete` unless `.ags/state/receipt.json` matches the workspace tree hash or carries an explicit `NOT VERIFIED` rationale.
 
-## Getting started
+---
+
+## What's Included
+
+| Component | Count | Location | Purpose |
+|---|---:|---|---|
+| Unified workflow skills | 21 | [`core/skills/`](core/skills/) -> [`skills/`](skills/) | Consolidates all 75 legacy `ccgs-*` workflows (`SKILL.md` <=220 lines + lazy-loaded `references/*.md`) |
+| Core studio roles | 12 | [`core/agents/core/`](core/agents/core/) | 5 strictly `read-only` reviewers (`scout`, `creative-director`, `technical-director`, `qa-lead`, `code-reviewer`) + 7 `workspace-write` executors |
+| Engine specialist packs | 15 | [`core/agents/engines/`](core/agents/engines/) | 5 Godot + 5 Unity + 5 Unreal specialists (only active engine installed per project) |
+| Domain lenses | 25 | [`core/agents/lenses/`](core/agents/lenses/) | Preserves 100% of specialized checklists (AI, networking, audio, narrative, economy, security, l10n, etc.) |
+| Director & lead gates | 28 | [`core/gates/`](core/gates/) | Structured gate prompts indexed in [`core/gates/INDEX.md`](core/gates/INDEX.md) |
+| Path-scoped rules & router | 14 | [`core/rules/`](core/rules/) | `<110`-line `AGENTS.md` routing table + 13 Game-Native rules across `src/`, `Assets/`, `Source/` |
+| Document templates | 46 + `project.yaml` | [`core/templates/`](core/templates/) | GDDs, ADRs, art/audio bibles, UX guides, epics/stories, test plans, session state |
+| Version-pinned engine docs | 46 | [`core/engine-reference/`](core/engine-reference/) | Godot 4.6, Unity 6.3 LTS, Unreal Engine 5.7 post-cutoff API references |
+| Pure-Python CLI & hooks | 1 runtime | [`ags/`](ags/) | `init`, `sync`, `doctor`, `verify`, `preflight`, `check`, `hook`, `build` |
+
+---
+
+## Quick Start
 
 ### Requirements
 
-- [OpenAI Codex](https://developers.openai.com/codex/) with plugin support
-- [Git](https://git-scm.com/)
-- For bundled validation scripts: **Python 3** and **Bash** (Git Bash on Windows)
+- **Python 3.10+** (pure stdlib — no third-party packages required)
+- **Git** (optional, recommended for tree-hash receipts and scope checks)
+- Your chosen game engine (**Godot 4**, **Unity 6**, or **Unreal Engine 5**) to build and playtest
 
-### 1. Install the plugin
+### 1. Install or Run the CLI
 
-Run in a terminal:
+Run directly from a clone, or install the `ags` console script locally:
 
-```powershell
+```bash
+git clone https://github.com/BoyinGlasses/Codex-Game-Studio.git
+cd Codex-Game-Studio
+
+# Option A: install editable CLI (`ags` command)
+pip install -e .
+
+# Option B: invoke directly without installing
+python ags_cli.py --help
+```
+
+For Codex plugin marketplace installation:
+
+```bash
 codex plugin marketplace add BoyinGlasses/Codex-Game-Studio
-codex plugin add codex-game-studio@codex-game-studio
+codex plugin add agents-game-studio@agents-game-studio
 ```
 
-Start a **new Codex task** after installing so Codex loads its skills.
+### 2. Initialize a Game Project (`ags init`)
 
-### 2. Create a game project
+Target your game repository and select your **engine** and **harness adapter(s)**:
 
-In Codex, run:
+```bash
+# Godot + Codex & Antigravity
+ags init /path/to/MyGame --engine godot --harness codex,antigravity
+
+# Unity + OpenCode & Claude Code
+ags init /path/to/MyGame --engine unity --harness opencode,claude
+
+# Unreal + all harnesses (or universal AGENTS.md standard only)
+ags init /path/to/MyGame --engine unreal --harness all
+ags init /path/to/MyGame --engine godot --harness universal
+```
+
+> Every initialized game project receives a standalone, zero-dependency `.ags/cli.py`, so hooks and checks run inside the game repo with no runtime dependency on this framework repository. `tests/eval/` stays in the framework repo and is never copied into game projects.
+
+### 3. Harness Setup Notes
+
+| Harness | Generated Adapter Files | First-Run Notes |
+|---|---|---|
+| **Codex** (`codex`) | `.codex/config.toml`, `.codex/agents/*.toml`, `.codex/hooks.json` | Multi-agent roles with native `sandbox_mode` (`read-only` enforced for reviewers) and `model_reasoning_effort`. Review/trust hooks via `/hooks` on first open. Invoke workflows with `$ags-start` or `ags-start`. |
+| **Antigravity** (`antigravity`) | `.agents/hooks.json`, `.agents/rules/ags-rules.md`, `.agents/skills/ags-*/` | Uses camelCase protojson hook schema (`SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`) and workspace rules. |
+| **OpenCode** (`opencode`) | `opencode.json`, `.opencode/agents/*.md`, `.opencode/plugins/ags-hooks.ts` | Configures tool permissions, agent modes, and a thin TypeScript hook plugin calling `python .ags/cli.py hook --harness opencode`. |
+| **Claude Code** (`claude`) | `CLAUDE.md` (`@AGENTS.md`), `.claude/agents/*.md`, `.claude/settings.json` | Routes hooks through `.ags/cli.py hook --harness claude` (exit code `2` on policy block). |
+| **Universal** (`universal`) | `AGENTS.md`, `project.yaml`, `.agents/skills/ags-*/`, `.ags/` | Compatible with any coding agent reading `AGENTS.md` and the Agent Skills layout. |
+
+### 4. Start Building
+
+Open your initialized game directory in your AI harness and invoke **`ags-start`**. Choose your `modes.rigor` level (`minimal` / `jam`, `standard` / `indie`, or `full` / `studio`), configure your engine with `ags-settings`, and follow the guided loop:
 
 ```text
-$ccgs-new-game Create a project at D:\Games\MyGame
+ags-ideate -> ags-gdd -> ags-architect -> ags-plan -> ags-dev -> ags-verify -> ags-qa -> ags-release
 ```
 
-Open `D:\Games\MyGame` as a **new Codex project**. Codex can then load its generated `AGENTS.md`, workflow skills, agent definitions, and hook configuration.
+---
 
-### 3. Start the guided workflow
+## CLI Reference
 
-```text
-$ccgs-start
+Inside an initialized game project, replace `ags` with `python .ags/cli.py`:
+
+| Command | Purpose |
+|---|---|
+| `ags init [dir] --engine <e> --harness <h>` | Assemble a new game project from `core/` for selected engine and harnesses |
+| `ags sync [dir]` | Refresh `.ags/cli.py`, core skills/roles/templates, and harness configs in an existing AGS v2 repo |
+| `ags doctor [dir] [--json]` | Verify harness JSON/TOML schemas, test hook execution, check engine CLIs, flag duplicate `ccgs-*` skills |
+| `ags verify [dir] [--engine <e>] [--json]` | Run universal JSON/YAML/TOML checks + engine-aware validators (Godot 4, Unity, Unreal) and write `.ags/state/receipt.json` |
+| `ags preflight <skill> [target]` | Emit resolved config (`project.local.yaml` -> `project.yaml` -> rigor -> overrides -> defaults) + session/receipt context as JSON |
+| `ags check adr-graph [adr-dir]` | Build ADR dependency graph and detect cycles deterministically |
+| `ags check gdd [target]` | Report section presence across system GDDs |
+| `ags check artifacts [--phase <id>]` | Evaluate `.ags/workflow-catalog.yaml` artifact specs against files on disk |
+| `ags check coherence` | Reconcile `project.yaml` declarations against `docs/engine-reference/` and engine files |
+| `ags check receipts <hash\|check\|sections-hash\|sections-check> ...` | Compute content hashes and section-level diffs for review receipts |
+| `ags check review-scope` | Compute incremental cross-GDD review scope from git history and dependencies |
+| `ags check rotate-state [--dry-run]` | Archive narrative notes in `production/session-state/active.md` while keeping the bounded checkpoint |
+| `ags check migrate-v1 [--dry-run \| --finalize]` | Safely convert CCGS v1.0 legacy `.txt`/markdown config files into `project.yaml` |
+| `ags hook --harness <h> <event>` | Execute one of the 5 unified lifecycle hooks (`session_start`, `pre_command`, `post_edit`, `story_gate`, `checkpoint_sync`) |
+| `ags build [--check]` | Compile `core/skills/` -> root `skills/`, root `hooks.json`, and sync plugin manifests (`--check` exits 0 only when clean) |
+
+---
+
+## 21 Cohesive Skills (`core/skills/`)
+
+| Stage / Domain | Skills |
+|---|---|
+| **Setup & Discovery** | `ags-new-game`, `ags-start`, `ags-settings`, `ags-adopt` |
+| **Design & Art/UX** | `ags-ideate`, `ags-gdd`, `ags-art-ux`, `ags-design-review` |
+| **Architecture & Planning** | `ags-architect`, `ags-arch-review`, `ags-plan` |
+| **Implementation & Verification** | `ags-dev`, `ags-verify`, `ags-qa`, `ags-bugs`, `ags-diagnose` |
+| **Orchestration, Gates & Release** | `ags-team`, `ags-gate`, `ags-localize`, `ags-release`, `ags-skill-ops` |
+
+See the complete 75 -> 21 mapping in [`docs/PARITY-LEDGER.md`](docs/PARITY-LEDGER.md).
+
+---
+
+## Documentation & Testing
+
+- **Architecture Deep Dive**: [`docs/architecture/ags-v2-architecture.md`](docs/architecture/ags-v2-architecture.md)
+- **Zero-Loss Parity Matrix**: [`docs/PARITY-LEDGER.md`](docs/PARITY-LEDGER.md)
+- **Upgrading from v1 / Codex Port**: [`docs/MIGRATION.md`](docs/MIGRATION.md)
+- **Eval Rubric & Behavioral Specs**: [`tests/eval/README.md`](tests/eval/README.md)
+
+Run the full framework test suite and build sync verification:
+
+```bash
+python -m unittest discover -s tests -v
+python -m ags.build --check
+python ags_cli.py doctor --json
 ```
 
-The onboarding workflow asks about your game idea or existing work, then helps choose the next step. Already building a game? Open its root folder in Codex and run `$ccgs-start` there. Use `$ccgs-help` to browse other workflows.
+---
 
-## From an idea to a game
+## Credits and License
 
-```text
-Idea -> Design -> Architecture -> Stories -> Code -> QA -> Release
-  ^                                                        |
-  +---------------------- Iterate -------------------------+
-```
+**Agents Game Studio v2.0** builds upon **[Codex-Game-Studio](https://github.com/BoyinGlasses/Codex-Game-Studio)** and adapts **[Claude Code Game Studios](https://github.com/Donchitos/Claude-Code-Game-Studios)** by Donchitos.
 
-Some common entry points:
-
-| Goal | Codex skill |
-| --- | --- |
-| Find the right next step | `$ccgs-start` or `$ccgs-help` |
-| Explore an idea | `$ccgs-brainstorm` |
-| Set up your game engine | `$ccgs-setup-engine` |
-| Break down game systems | `$ccgs-map-systems` |
-| Plan features | `$ccgs-create-epics` and `$ccgs-create-stories` |
-| Implement a story | `$ccgs-dev-story` |
-| Check code and readiness | `$ccgs-code-review` and `$ccgs-gate-check` |
-| Prepare a release | `$ccgs-release-checklist` |
-
-### Choose how much process you need
-
-The generated `project.yaml` supports three `modes.rigor` levels:
-
-| Level | Best for | Typical workflow |
-| --- | --- | --- |
-| `minimal` | Game jams and prototypes | Engine setup -> one-page brief -> stories -> code |
-| `standard` | Games with connected systems | Design docs, architecture, development, QA |
-| `full` | Larger projects and teams | Detailed planning, reviews, and evidence |
-
-`$ccgs-start` helps choose a level; `$ccgs-settings` can adjust it later. `modes.automation` separately controls how often the workflow pauses for input.
-
-## Studio hierarchy
-
-The 49 specialist roles in the bundled template follow three tiers inspired by the upstream project:
-
-```text
-Directors
-  creative-director   technical-director   producer
-         |
-Department leads
-  game-designer   lead-programmer   art-director   qa-lead   ...
-         |
-Specialists
-  gameplay-programmer   level-designer   sound-designer   ui-programmer   ...
-```
-
-Definitions live in [`assets/template/.codex/agents/`](assets/template/.codex/agents/). Codex can delegate to these roles when agent delegation is available; otherwise it can use the role instructions directly. Naming a role does not mean a separate agent ran.
-
-### Supported engines
-
-| Engine | Focus areas |
-| --- | --- |
-| **Godot 4** | GDScript, shaders, GDExtension |
-| **Unity** | C#, DOTS/ECS, UI Toolkit, Addressables |
-| **Unreal Engine 5** | C++, Blueprints, GAS, replication |
-
-You still need to install your chosen engine to build and playtest a game.
-
-## Repository structure
-
-```text
-Codex-Game-Studio/
-|-- skills/                    # Plugin workflows ($ccgs-*)
-|   +-- ccgs-new-game/         # Creates a new project
-|-- assets/template/           # Files copied into a game project
-|   |-- AGENTS.md              # Active Codex instructions
-|   |-- project.yaml           # Engine and workflow configuration
-|   |-- .agents/skills/        # 74 game workflows
-|   |-- .codex/agents/         # 49 agent role definitions
-|   |-- .codex/hooks.json      # Hook configuration
-|   |-- .codex/hooks/          # Codex hook adapter
-|   +-- .claude/               # Retained upstream source resources
-|-- .agents/plugins/           # Marketplace metadata
-|-- plugin.json                # Plugin manifest
-+-- tests/smoke_port.py        # Port and hook smoke test
-```
-
-In a created game project, `AGENTS.md` governs Codex and `project.yaml` holds workflow configuration. The upstream `CLAUDE.md` remains as source reference.
-
-## How the Codex port differs
-
-The upstream project was created for **Claude Code**. This port maps `/name` workflows to **Codex `$ccgs-name` skills**, adapts specialist roles into **Codex agent TOML** files, and bridges supported scripts into **Codex hooks**.
-
-Some original features have no direct Codex equivalent: Claude Code's `Notification` event and status line are not installed. Project hooks require compatible runtime support and may need trust through `/hooks`. On Windows, Git Bash and Python 3 are required for the original shell checks.
-
-See [Codex port notes](assets/template/CODEX-PORT.md). The port is based on upstream commit [`d056997`](https://github.com/Donchitos/Claude-Code-Game-Studios/commit/d05699707fae39a9b3c78f4b5f69eb77819094f1); later upstream changes may not yet be included.
-
-## Contributing
-
-Suggestions, bug reports, engine compatibility fixes, and documentation improvements are welcome via [issues](https://github.com/BoyinGlasses/Codex-Game-Studio/issues) or [pull requests](https://github.com/BoyinGlasses/Codex-Game-Studio/pulls).
-
-After changing a skill, role, or hook, run:
-
-```powershell
-python tests/smoke_port.py
-```
-
-## Credits and license
-
-**Codex Game Studio** adapts **[Claude Code Game Studios by Donchitos](https://github.com/Donchitos/Claude-Code-Game-Studios)**. Donchitos created the original workflows, studio roles, templates, and rules; this repository adapts them for Codex. This is an **unofficial community port**, not affiliated with or endorsed by the original author.
-
-Licensed under **MIT**. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for the license and attribution.
+Licensed under **MIT**. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).

@@ -1,11 +1,11 @@
 {
-  "name": "codex-game-studio",
+  "name": "agents-game-studio",
   "interface": {
-    "displayName": "Codex Game Studio"
+    "displayName": "Agents Game Studio"
   },
   "plugins": [
     {
-      "name": "codex-game-studio",
+      "name": "agents-game-studio",
       "source": {
         "source": "url",
         "url": "https://github.com/BoyinGlasses/Codex-Game-Studio.git",

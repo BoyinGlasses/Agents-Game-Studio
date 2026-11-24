@@ -1,16 +1,20 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "codex-game-studio",
-  "version": "0.1.0",
-  "description": "Codex Game Studio: game development workflows, specialist agents, project template, and validation hooks.",
+  "name": "agents-game-studio",
+  "version": "2.0.0",
+  "description": "Agents Game Studio (AGS v2): multi-harness game development workflows, specialist roles, engine packs, project scaffold, and validation hooks.",
   "author": {
     "name": "BoyinGlasses"
   },
   "repository": "https://github.com/BoyinGlasses/Codex-Game-Studio",
   "license": "MIT",
   "keywords": [
-    "codex",
+    "agents-game-studio",
     "game-development",
+    "codex",
+    "antigravity",
+    "opencode",
+    "claude",
     "godot",
     "unity",
     "unreal",
@@ -19,16 +23,16 @@
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "Codex Game Studio",
-        "shortDescription": "Build games with coordinated Codex specialists",
-        "longDescription": "74 game development workflows, 49 specialist roles, a game project template, and Codex validation hooks.",
+        "displayName": "Agents Game Studio",
+        "shortDescription": "Build games across Codex, Antigravity, OpenCode, and Claude Code",
+        "longDescription": "Multi-harness game development framework with 21 unified workflow skills, core studio roles, engine packs, director gates, and verification hooks.",
         "developerName": "BoyinGlasses",
         "category": "Productivity",
         "capabilities": [
           "Read",
           "Write"
         ],
-        "defaultPrompt": "Create a new game project with Codex Game Studio."
+        "defaultPrompt": "Initialize or advance a game project with Agents Game Studio."
       }
     }
   }

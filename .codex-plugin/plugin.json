@@ -1,21 +1,21 @@
 {
-  "name": "ccgs-codex",
-  "version": "0.1.0+codex.20260923114717",
-  "description": "Codex port of Claude Code Game Studios workflows and project template.",
+  "name": "agents-game-studio",
+  "version": "2.0.0",
+  "description": "Agents Game Studio (AGS v2): multi-harness game development workflows and project template.",
   "author": {
     "name": "Donchitos / Codex port"
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "Game Studios for Codex",
-    "shortDescription": "Game studio workflows and project template",
-    "longDescription": "The complete Claude Code Game Studios framework adapted for Codex projects.",
+    "displayName": "Agents Game Studio",
+    "shortDescription": "Build games across Codex, Antigravity, OpenCode, and Claude Code",
+    "longDescription": "Multi-harness game development framework with 21 unified workflow skills, core studio roles, engine packs, director gates, and verification hooks.",
     "developerName": "Donchitos / Codex port",
     "category": "Productivity",
     "capabilities": [
       "Read",
       "Write"
     ],
-    "defaultPrompt": "Create a new game project with Codex Game Studios."
+    "defaultPrompt": "Initialize or advance a game project with Agents Game Studio."
   }
 }
