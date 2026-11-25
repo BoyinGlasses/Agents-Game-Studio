@@ -120,18 +120,42 @@ class TestHooksUnified(unittest.TestCase):
             codex_json = json.loads(out)
             self.assertEqual(codex_json["decision"], "block")
             self.assertIn("not valid JSON", codex_json["reason"])
-            self.assertIn("NAMING:", codex_json["reason"])
+            self.assertNotIn("NAMING:", codex_json["reason"])
 
-            # Antigravity camelCase toolCall (PostToolUse contract expects empty JSON object {})
+            # Antigravity PreToolUse catches invalid JSON BEFORE write (PostToolUse returns {})
             ag_in = json.dumps({
                 "toolCall": {
                     "name": "write_file",
                     "args": {"TargetFile": str(bad_json), "CodeContent": "{broken"},
                 }
             })
+            rc, out, _ = run_hook_cli("antigravity", "PreToolUse", ag_in, root=root)
+            self.assertEqual(rc, 0)
+            ag_pre = json.loads(out)
+            self.assertEqual(ag_pre["decision"], "deny")
+            self.assertIn("not valid JSON", ag_pre["reason"])
+
             rc, out, _ = run_hook_cli("antigravity", "PostToolUse", ag_in, root=root)
             self.assertEqual(rc, 0)
             self.assertEqual(json.loads(out), {})
+
+            # Engine-aware Godot 3 syntax check fires on post_edit AND PreToolUse write_file
+            legacy_gd = root / "src" / "legacy.gd"
+            legacy_gd.write_text("extends Node\nexport var speed = 5\n", encoding="utf-8")
+            gd_in = json.dumps({
+                "toolCall": {
+                    "name": "write_file",
+                    "args": {"TargetFile": str(legacy_gd), "CodeContent": "extends Node\nexport var speed = 5\n"},
+                }
+            })
+            rc, out, _ = run_hook_cli("antigravity", "PreToolUse", gd_in, root=root)
+            self.assertEqual(rc, 0)
+            self.assertEqual(json.loads(out)["decision"], "deny")
+            self.assertIn("legacy Godot 3", json.loads(out)["reason"])
+
+            rc, _, err = run_hook_cli("claude", "post_edit", json.dumps({"tool_name": "Write", "tool_input": {"file_path": "src/legacy.gd"}}), root=root)
+            self.assertEqual(rc, 2)
+            self.assertIn("legacy Godot 3", err)
 
             # OpenCode
             oc_in = json.dumps({
@@ -199,6 +223,18 @@ class TestHooksUnified(unittest.TestCase):
             commit_in = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git commit -m test"}})
             rc, _, err = run_hook_cli("claude", "pre_command", commit_in, root=root)
             self.assertEqual(rc, 2)
+            self.assertIn("not valid JSON", err)
+
+            # Chained `git add <file> && git commit` also blocked even before git add runs
+            (root / "assets" / "data" / "chained.json").write_text("{still_bad", encoding="utf-8")
+            subprocess.run(["git", "reset", "HEAD", "assets/data/loot.json"], cwd=root, check=False, capture_output=True)
+            chained_in = json.dumps({
+                "tool_name": "Bash",
+                "tool_input": {"command": "git add assets/data/chained.json && git commit -m chained"},
+            })
+            rc, _, err = run_hook_cli("claude", "pre_command", chained_in, root=root)
+            self.assertEqual(rc, 2)
+            self.assertIn("chained.json", err)
             self.assertIn("not valid JSON", err)
 
     def test_story_gate_receipt_enforcement_and_not_verified_rationale(self) -> None:
@@ -275,7 +311,22 @@ class TestHooksUnified(unittest.TestCase):
             self.assertEqual(rc, 2)
             self.assertIn("stale", err)
 
-            # 4) Explicit NOT VERIFIED rationale -> allowed with notice
+            # 4) Pre-existing template/placeholder NOT VERIFIED in disk text MUST NOT bypass story_gate
+            story.write_text(
+                "# Story S-01\nStatus: In Progress\nNote: if blocked, mark NOT VERIFIED: reason here.\n",
+                encoding="utf-8",
+            )
+            bypass_attempt = json.dumps({
+                "toolCall": {
+                    "name": "edit_file",
+                    "args": {"Path": str(story), "Replacement": "Status: Complete"},
+                }
+            })
+            rc, out, _ = run_hook_cli("antigravity", "PreToolUse", bypass_attempt, root=root)
+            self.assertEqual(rc, 0)
+            self.assertEqual(json.loads(out)["decision"], "deny")
+
+            # 5) Explicit non-placeholder NOT VERIFIED rationale -> allowed with notice
             rationale_payload = json.dumps({
                 "tool_name": "Write",
                 "tool_input": {

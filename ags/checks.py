@@ -1961,6 +1961,111 @@ def _validate_unreal(proj_root: Path) -> list[dict[str, Any]]:
     ]
 
 
+def validate_file_content(
+    rel_path: str,
+    text: str,
+    root: Path,
+    engine: str | None = None,
+) -> tuple[list[str], list[str]]:
+    """Run fast O(1) single-file syntax and engine static checks; return (errors, warnings)."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    norm_rel = _norm_path(rel_path)
+    ext = Path(norm_rel).suffix.lower()
+    eng = (engine or _detect_engine(root)).lower()
+    clean = text.lstrip("\ufeff")
+
+    if ext == ".json":
+        try:
+            json.loads(clean)
+        except Exception as exc:
+            errors.append(
+                f"FORMAT: {norm_rel} is not valid JSON — fix syntax errors before continuing ({exc})"
+            )
+        return errors, warnings
+
+    if ext in (".yaml", ".yml"):
+        diag = parse_yaml_with_diagnostics(clean)
+        errors.extend(f"FORMAT: {norm_rel}: {e}" for e in diag.errors)
+        return errors, warnings
+
+    if ext == ".toml":
+        try:
+            if tomllib is not None:
+                tomllib.loads(clean)
+            else:
+                err = _validate_toml_fallback(clean)
+                if err:
+                    errors.append(f"FORMAT: {norm_rel}: invalid TOML ({err})")
+        except Exception as exc:
+            errors.append(f"FORMAT: {norm_rel}: invalid TOML ({exc})")
+        return errors, warnings
+
+    if ext == ".gd" and eng in ("godot", "none"):
+        legacy_patterns = (
+            ("legacy Godot 3 yield()", re.compile(r"\byield\s*\(")),
+            ("legacy Godot 3 export var (use @export)", re.compile(r"^\s*export\s*(?:\([^)]*\))?\s*var\b")),
+            ("legacy Godot 3 onready var (use @onready)", re.compile(r"^\s*onready\s+var\b")),
+            ("legacy Godot 3 .instance() (use .instantiate())", re.compile(r"\.instance\s*\(")),
+            ("legacy Godot 3 3-arg string connect()", re.compile(r"(?:\.|\b)connect\s*\(\s*[\"'][^\"']+[\"']\s*,[^,]+,")),
+        )
+        for lineno, line in enumerate(clean.splitlines(), 1):
+            code = line.split("#", 1)[0]
+            if not code.strip():
+                continue
+            for msg, pat in legacy_patterns:
+                if pat.search(code):
+                    errors.append(f"GODOT: {norm_rel}:{lineno}: {msg}")
+        return errors, warnings
+
+    if ext in (".tscn", ".tres") and eng in ("godot", "none"):
+        ext_re = re.compile(r'\[ext_resource\b[^\]]*\bpath\s*=\s*"res://([^"]+)"')
+        godot_root = root
+        for lineno, line in enumerate(clean.splitlines(), 1):
+            for m in ext_re.finditer(line):
+                res_rel = m.group(1)
+                if not (godot_root / res_rel).exists():
+                    errors.append(f"GODOT: {norm_rel}:{lineno}: broken ext_resource path res://{res_rel}")
+        return errors, warnings
+
+    if ext in (".h", ".hpp") and eng in ("unreal", "none"):
+        u_macro_re = re.compile(r"\bU(?:CLASS|STRUCT|INTERFACE)\s*\(")
+        if u_macro_re.search(clean):
+            inc_re = re.compile(r'^\s*#\s*include\s+[<"]([^">]+)[">]')
+            includes: list[tuple[int, str]] = []
+            in_block = False
+            for lineno, raw in enumerate(clean.splitlines(), 1):
+                line = raw
+                if in_block:
+                    if "*/" in line:
+                        line = line.split("*/", 1)[1]
+                        in_block = False
+                    else:
+                        continue
+                while "/*" in line:
+                    before, after = line.split("/*", 1)
+                    if "*/" in after:
+                        line = before + " " + after.split("*/", 1)[1]
+                    else:
+                        line = before
+                        in_block = True
+                        break
+                m = inc_re.match(line.split("//", 1)[0])
+                if m:
+                    includes.append((lineno, m.group(1)))
+            gen_indices = [idx for idx, (_, inc) in enumerate(includes) if inc.endswith(".generated.h")]
+            if not gen_indices:
+                errors.append(f"UNREAL: {norm_rel}: UCLASS/USTRUCT header is missing .generated.h #include")
+            elif gen_indices[-1] != len(includes) - 1:
+                last_line, last_inc = includes[-1]
+                errors.append(
+                    f"UNREAL: {norm_rel}:{last_line}: .generated.h must be the last #include (found '{last_inc}' after it)"
+                )
+        return errors, warnings
+
+    return errors, warnings
+
+
 def verify_project(
     root: Path | None = None,
     engine_override: str | None = None,

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ags.checks import compute_tree_hash
+from ags.checks import compute_tree_hash, validate_file_content
 from ags.config import (
     find_project_root,
     load_yaml,
@@ -58,6 +58,19 @@ _STATUS_COMPLETE_RE = re.compile(
 _NOT_VERIFIED_RATIONALE_RE = re.compile(
     r"NOT VERIFIED(?:\*\*)?\s*(?:[:\-—(]|because|due to)\s*\S{2,}",
     re.I,
+)
+_PLACEHOLDER_RATIONALE_RE = re.compile(
+    r"NOT VERIFIED(?:\*\*)?\s*(?:[:\-—(]|because|due to)\s*(?:<[^>]+>|\[[^\]]+\]|reason(?:\s+(?:here|if\b))?\b)",
+    re.I,
+)
+_GIT_COMMIT_SEGMENT_RE = re.compile(
+    r"(?:^|[;&|]\s*)git(?:\s+(?:-[A-Za-z]\s+\S+|--[a-z-]+=\S+))*\s+commit\b"
+)
+_GIT_PUSH_SEGMENT_RE = re.compile(
+    r"(?:^|[;&|]\s*)git(?:\s+(?:-[A-Za-z]\s+\S+|--[a-z-]+=\S+))*\s+push\b"
+)
+_GIT_ADD_SEGMENT_RE = re.compile(
+    r"(?:^|[;&|]\s*)git(?:\s+(?:-[A-Za-z]\s+\S+|--[a-z-]+=\S+))*\s+add\s+([^;&|\n]+)"
 )
 _RECEIPT_TAMPER_RE = re.compile(
     r"(?:>|>>|\btee\b|\brm\b|\bmv\b|\bcp\b|\bsed\s+-i\b|\btouch\b|\btruncate\b)[^\n]*\.ags/state/(?:receipt\.json)?",
@@ -323,22 +336,37 @@ def hook_pre_command(root: Path, command: str) -> HookOutcome:
             message="BLOCKED: Force-staging generated engine/cache directories is prohibited.",
         )
 
-    if re.match(r"^git\s+commit\b", cmd):
+    if _GIT_COMMIT_SEGMENT_RE.search(cmd):
+        staged_set: set[str] = set()
         git_bin = shutil.which("git")
-        if not git_bin:
-            return HookOutcome()
-        proc = subprocess.run(
-            [git_bin, "diff", "--cached", "--name-only", "-z"],
-            cwd=str(root),
-            capture_output=True,
-            timeout=10,
-            check=False,
-        )
-        staged = [
-            _norm_path(p)
-            for p in proc.stdout.decode("utf-8", errors="replace").split("\0")
-            if p
-        ]
+        if git_bin:
+            proc = subprocess.run(
+                [git_bin, "diff", "--cached", "--name-only", "-z"],
+                cwd=str(root),
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+            for p in proc.stdout.decode("utf-8", errors="replace").split("\0"):
+                if p:
+                    staged_set.add(_norm_path(p))
+
+        # Also inspect files passed to chained `git add <paths> && git commit ...` before git add runs.
+        for add_m in _GIT_ADD_SEGMENT_RE.finditer(cmd):
+            for tok in add_m.group(1).split():
+                tok_clean = tok.strip("\"'")
+                if not tok_clean or tok_clean.startswith("-") or tok_clean in (".", "-A", "--all"):
+                    continue
+                rel_tok = _rel_path_for_root(root, tok_clean)
+                cand_path = root / rel_tok
+                if cand_path.is_file():
+                    staged_set.add(rel_tok)
+                elif cand_path.is_dir():
+                    for subf in cand_path.rglob("*"):
+                        if subf.is_file():
+                            staged_set.add(_norm_path(str(subf.relative_to(root))))
+
+        staged = sorted(staged_set)
         if not staged:
             return HookOutcome()
 
@@ -397,7 +425,7 @@ def hook_pre_command(root: Path, command: str) -> HookOutcome:
             return HookOutcome(message="\n".join(warnings))
         return HookOutcome()
 
-    if re.match(r"^git\s+push\b", cmd):
+    if _GIT_PUSH_SEGMENT_RE.search(cmd):
         branch = _git_branch(root)
         for protected in ("main", "master", "develop"):
             if branch == protected or re.search(rf"\s{protected}(?:\s|$)", cmd):
@@ -422,28 +450,88 @@ def _rel_path_for_root(root: Path, raw_path: str) -> str:
     return norm
 
 
+def _extract_completion_notes(text: str) -> str:
+    """Extract content under `## Completion Notes` (if present)."""
+    lines = text.splitlines()
+    in_sec = False
+    collected: list[str] = []
+    for line in lines:
+        if re.match(r"^##\s+Completion Notes\b", line, re.I):
+            in_sec = True
+            continue
+        if in_sec and line.startswith("## "):
+            break
+        if in_sec:
+            collected.append(line)
+    return "\n".join(collected)
+
+
+def _has_valid_not_verified_rationale(proposed_text: str, disk_text: str) -> bool:
+    """Require an explicit non-placeholder NOT VERIFIED rationale in the proposed edit or Completion Notes."""
+    candidates = [proposed_text] if proposed_text else []
+    completion_notes = _extract_completion_notes(disk_text)
+    if completion_notes:
+        candidates.append(completion_notes)
+    elif not proposed_text and disk_text:
+        candidates.append(disk_text)
+
+    for text in candidates:
+        for line in text.splitlines():
+            if _NOT_VERIFIED_RATIONALE_RE.search(line) and not _PLACEHOLDER_RATIONALE_RE.search(line):
+                return True
+    return False
+
+
+def hook_pre_edit(root: Path, tool_name: str, edits: list[tuple[str, str]]) -> HookOutcome:
+    """Gate Story Status: Complete and block invalid full-file writes (JSON/YAML/TOML/engine) before disk write."""
+    gate_out = hook_story_gate(root, edits)
+    if gate_out.blocked:
+        return gate_out
+
+    t_low = tool_name.lower()
+    is_full_write = t_low in ("write", "write_file")
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for raw_path, proposed_text in edits:
+        if not proposed_text:
+            continue
+        rel = _rel_path_for_root(root, raw_path)
+        ext = Path(rel).suffix.lower()
+        should_validate = is_full_write or (
+            ext == ".json" and proposed_text.lstrip().startswith(("{", "["))
+        )
+        if should_validate and ext in (".json", ".yaml", ".yml", ".toml", ".gd", ".tscn", ".tres", ".h", ".hpp"):
+            file_errs, file_warns = validate_file_content(rel, proposed_text, root)
+            errors.extend(file_errs)
+            warnings.extend(file_warns)
+
+    if errors:
+        combined = "\n".join(errors + warnings)
+        return HookOutcome(blocked=True, error_feedback=True, message=combined)
+    msgs = [m for m in (gate_out.message, *warnings) if m]
+    if msgs:
+        return HookOutcome(message="\n".join(msgs))
+    return HookOutcome()
+
+
 def hook_post_edit(root: Path, edits: list[tuple[str, str]]) -> HookOutcome:
-    """Validate edited asset names/JSON and warn on skill modifications."""
+    """Run engine-aware static checks on edited files and warn on skill modifications."""
     warnings: list[str] = []
     errors: list[str] = []
 
     for raw_path, _ in edits:
         rel = _rel_path_for_root(root, raw_path)
-        if re.search(r"(^|/)assets/", rel):
-            fname = Path(rel).name
-            if re.search(r"[A-Z\s-]", fname):
-                warnings.append(
-                    f"NAMING: {rel} must be lowercase with underscores (got: {fname})"
-                )
-            if re.match(r"(?:^|.*/)?assets/data/.*\.json$", rel):
-                fpath = Path(raw_path) if Path(raw_path).is_absolute() else (root / rel)
-                if fpath.is_file():
-                    try:
-                        json.loads(fpath.read_text(encoding="utf-8-sig"))
-                    except Exception:
-                        errors.append(
-                            f"FORMAT: {rel} is not valid JSON — fix syntax errors before continuing"
-                        )
+        fpath = Path(raw_path) if Path(raw_path).is_absolute() else (root / rel)
+        ext = Path(rel).suffix.lower()
+        if fpath.is_file() and ext in (".json", ".yaml", ".yml", ".toml", ".gd", ".tscn", ".tres", ".h", ".hpp"):
+            try:
+                content = fpath.read_text(encoding="utf-8-sig", errors="replace")
+            except OSError:
+                content = ""
+            file_errs, file_warns = validate_file_content(rel, content, root)
+            errors.extend(file_errs)
+            warnings.extend(file_warns)
         if re.search(r"(^|/)\.agents/skills/", rel):
             m = re.search(r"\.agents/skills/([^/]+)", rel)
             sname = m.group(1) if m else rel
@@ -474,8 +562,7 @@ def hook_story_gate(root: Path, edits: list[tuple[str, str]]) -> HookOutcome:
             except OSError:
                 disk_text = ""
 
-        effective_text = proposed_text or disk_text
-        combined_text = f"{disk_text}\n{proposed_text}" if (disk_text and proposed_text) else effective_text
+        effective_text = proposed_text if proposed_text else disk_text
         if not _STATUS_COMPLETE_RE.search(effective_text):
             continue
 
@@ -496,7 +583,7 @@ def hook_story_gate(root: Path, edits: list[tuple[str, str]]) -> HookOutcome:
         else:
             reason_detail = ".ags/state/receipt.json does not exist"
 
-        if _NOT_VERIFIED_RATIONALE_RE.search(combined_text):
+        if _has_valid_not_verified_rationale(proposed_text, disk_text):
             return HookOutcome(
                 message=(
                     f"Story gate: allowing Status: Complete on {rel} via explicit NOT VERIFIED rationale "
@@ -643,7 +730,7 @@ def evaluate_hook(harness: str, event: str, payload: dict[str, Any], root: Path 
     if ev_low in ("pre_command", "pretooluse"):
         edits = _extract_edits(tool_input)
         if t_low in _EDIT_TOOL_NAMES or (edits and not _extract_command(tool_input)):
-            return hook_story_gate(proj_root, edits), canon_event
+            return hook_pre_edit(proj_root, tool_name, edits), canon_event
         cmd = _extract_command(tool_input)
         return hook_pre_command(proj_root, cmd), canon_event
 
