@@ -76,6 +76,27 @@ class TestYamlParser(unittest.TestCase):
         self.assertEqual(meta["description"], "Line one.\nLine two.")
         self.assertEqual(body, "# Body")
 
+    def test_trailing_zero_versions_and_literal_block_blank_hash_lines(self) -> None:
+        raw = (
+            "engine:\n"
+            "  name: Godot\n"
+            "  version: 4.10\n"
+            "  minor: 6.0\n"
+            "  budget_ms: 16.67\n"
+            "notes: |\n"
+            "  First line\n"
+            "\n"
+            "  # Heading inside block\n"
+            "  Second line\n"
+            "next_key: ok\n"
+        )
+        data = parse_yaml(raw)
+        self.assertEqual(data["engine"]["version"], "4.10")
+        self.assertEqual(data["engine"]["minor"], "6.0")
+        self.assertEqual(data["engine"]["budget_ms"], 16.67)
+        self.assertEqual(data["notes"], "First line\n\n# Heading inside block\nSecond line")
+        self.assertEqual(data["next_key"], "ok")
+
 
 class TestConfigResolution(unittest.TestCase):
     """Test resolution precedence, rigor expansion, overrides, and null handling."""

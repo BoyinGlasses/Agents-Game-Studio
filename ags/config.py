@@ -197,7 +197,9 @@ def _parse_scalar(raw: str) -> Any:
         except ValueError:
             return text
     if re.fullmatch(r"-?[0-9]+\.[0-9]+", text):
-        # Preserve version-like strings only if trailing zeros matter; float handles numeric configs.
+        # Keep trailing-zero decimals (e.g. engine.version: 4.10 or 6.0) as exact strings.
+        if text.endswith("0"):
+            return text
         try:
             return float(text)
         except ValueError:
@@ -293,16 +295,26 @@ def _preprocess_lines(text: str) -> tuple[list[tuple[int, int, str]], list[int]]
     return lines, tab_lines
 
 
-def _parse_block(lines: list[tuple[int, int, str]], start: int, min_indent: int) -> tuple[Any, int]:
+def _parse_block(
+    lines: list[tuple[int, int, str]],
+    start: int,
+    min_indent: int,
+    raw_lines: list[str] | None = None,
+) -> tuple[Any, int]:
     if start >= len(lines):
         return {}, start
     _, first_indent, first_text = lines[start]
     if first_text == "-" or first_text.startswith("- "):
-        return _parse_sequence(lines, start, first_indent)
-    return _parse_mapping(lines, start, min_indent)
+        return _parse_sequence(lines, start, first_indent, raw_lines)
+    return _parse_mapping(lines, start, min_indent, raw_lines)
 
 
-def _parse_sequence(lines: list[tuple[int, int, str]], start: int, seq_indent: int) -> tuple[list[Any], int]:
+def _parse_sequence(
+    lines: list[tuple[int, int, str]],
+    start: int,
+    seq_indent: int,
+    raw_lines: list[str] | None = None,
+) -> tuple[list[Any], int]:
     items: list[Any] = []
     idx = start
     n = len(lines)
@@ -319,7 +331,7 @@ def _parse_sequence(lines: list[tuple[int, int, str]], start: int, seq_indent: i
         after_dash_nc = _strip_inline_comment(after_dash).strip()
         if not after_dash_nc:
             if idx + 1 < n and lines[idx + 1][1] > ind:
-                child, idx = _parse_block(lines, idx + 1, lines[idx + 1][1])
+                child, idx = _parse_block(lines, idx + 1, lines[idx + 1][1], raw_lines)
                 items.append(child)
             else:
                 items.append(None)
@@ -334,7 +346,7 @@ def _parse_sequence(lines: list[tuple[int, int, str]], start: int, seq_indent: i
             val_nc = _strip_inline_comment(val_raw).strip()
             if val_nc == "":
                 if idx + 1 < n and lines[idx + 1][1] > ind + 1:
-                    child, idx = _parse_block(lines, idx + 1, lines[idx + 1][1])
+                    child, idx = _parse_block(lines, idx + 1, lines[idx + 1][1], raw_lines)
                     item_map[key] = child
                 else:
                     item_map[key] = None
@@ -343,7 +355,7 @@ def _parse_sequence(lines: list[tuple[int, int, str]], start: int, seq_indent: i
                 item_map[key] = _parse_scalar(val_raw)
                 idx += 1
             if idx < n and lines[idx][1] > ind and not (lines[idx][2] == "-" or lines[idx][2].startswith("- ")):
-                extra, idx = _parse_mapping(lines, idx, lines[idx][1])
+                extra, idx = _parse_mapping(lines, idx, lines[idx][1], raw_lines)
                 item_map.update(extra)
             items.append(item_map)
         else:
@@ -352,12 +364,65 @@ def _parse_sequence(lines: list[tuple[int, int, str]], start: int, seq_indent: i
     return items, idx
 
 
-def _parse_mapping(lines: list[tuple[int, int, str]], start: int, map_indent: int) -> tuple[dict[str, Any], int]:
+def _consume_block_scalar(
+    raw_lines: list[str],
+    header_lineno: int,
+    parent_indent: int,
+    style: str,
+) -> tuple[str | None, int]:
+    """Read a YAML literal (|) or folded (>) scalar preserving blank lines and '#' lines."""
+    collected: list[tuple[int, str]] = []
+    block_indent: int | None = None
+    last_consumed = header_lineno
+    for r_idx in range(header_lineno, len(raw_lines)):
+        raw = raw_lines[r_idx].rstrip("\r")
+        if not raw.strip():
+            collected.append((-1, ""))
+            last_consumed = r_idx + 1
+            continue
+        lead_len = len(raw) - len(raw.lstrip(" "))
+        if lead_len <= parent_indent:
+            break
+        if block_indent is None:
+            block_indent = lead_len
+        collected.append((lead_len, raw))
+        last_consumed = r_idx + 1
+
+    while collected and collected[-1][0] == -1:
+        collected.pop()
+    if not collected or block_indent is None:
+        return None, last_consumed
+
+    norm_lines = ["" if ind == -1 else raw[min(block_indent, len(raw)) :] for ind, raw in collected]
+    if style.startswith("|"):
+        return "\n".join(norm_lines), last_consumed
+    # Folded scalar (> / >-): join adjacent non-empty lines with a space, preserve blank lines as paragraphs.
+    parts: list[str] = []
+    para: list[str] = []
+    for ln in norm_lines:
+        if ln == "":
+            if para:
+                parts.append(" ".join(para))
+                para = []
+            parts.append("")
+        else:
+            para.append(ln)
+    if para:
+        parts.append(" ".join(para))
+    return "\n".join(parts), last_consumed
+
+
+def _parse_mapping(
+    lines: list[tuple[int, int, str]],
+    start: int,
+    map_indent: int,
+    raw_lines: list[str] | None = None,
+) -> tuple[dict[str, Any], int]:
     mapping: dict[str, Any] = {}
     idx = start
     n = len(lines)
     while idx < n:
-        _, ind, text = lines[idx]
+        lineno, ind, text = lines[idx]
         if ind < map_indent:
             break
         if text == "-" or text.startswith("- "):
@@ -370,21 +435,28 @@ def _parse_mapping(lines: list[tuple[int, int, str]], start: int, map_indent: in
         val_raw = kv.group(2).strip()
         val_nc = _strip_inline_comment(val_raw).strip()
         if val_nc in ("|", ">", "|-", ">-"):
-            block_lines: list[str] = []
-            idx += 1
-            block_indent = None
-            while idx < n and lines[idx][1] > ind:
-                if block_indent is None:
-                    block_indent = lines[idx][1]
-                pad = " " * max(0, lines[idx][1] - block_indent)
-                block_lines.append(pad + lines[idx][2])
+            if raw_lines is not None:
+                scalar_val, last_lineno = _consume_block_scalar(raw_lines, lineno, ind, val_nc)
+                mapping[key] = scalar_val
                 idx += 1
-            joiner = "\n" if val_nc.startswith("|") else " "
-            mapping[key] = joiner.join(block_lines) if block_lines else None
+                while idx < n and lines[idx][0] <= last_lineno:
+                    idx += 1
+            else:
+                block_lines: list[str] = []
+                idx += 1
+                block_indent = None
+                while idx < n and lines[idx][1] > ind:
+                    if block_indent is None:
+                        block_indent = lines[idx][1]
+                    pad = " " * max(0, lines[idx][1] - block_indent)
+                    block_lines.append(pad + lines[idx][2])
+                    idx += 1
+                joiner = "\n" if val_nc.startswith("|") else " "
+                mapping[key] = joiner.join(block_lines) if block_lines else None
             continue
         if val_nc == "":
             if idx + 1 < n and lines[idx + 1][1] > ind:
-                child, idx = _parse_block(lines, idx + 1, lines[idx + 1][1])
+                child, idx = _parse_block(lines, idx + 1, lines[idx + 1][1], raw_lines)
                 mapping[key] = child
             else:
                 mapping[key] = None
@@ -398,7 +470,9 @@ def _parse_mapping(lines: list[tuple[int, int, str]], start: int, map_indent: in
 def parse_yaml_with_diagnostics(text: str) -> YamlDiagnostics:
     """Parse a YAML string into a dictionary while capturing tab diagnostics."""
     diag = YamlDiagnostics()
-    lines, tab_lines = _preprocess_lines(text)
+    clean_text = text.lstrip("\ufeff")
+    raw_lines = clean_text.splitlines()
+    lines, tab_lines = _preprocess_lines(clean_text)
     diag.tab_lines = tab_lines
     if tab_lines:
         shown = ", ".join(str(n) for n in tab_lines[:5])
@@ -411,7 +485,7 @@ def parse_yaml_with_diagnostics(text: str) -> YamlDiagnostics:
     if not lines:
         return diag
     first_indent = lines[0][1]
-    parsed, _ = _parse_block(lines, 0, first_indent)
+    parsed, _ = _parse_block(lines, 0, first_indent, raw_lines)
     if isinstance(parsed, dict):
         diag.data = parsed
     return diag
