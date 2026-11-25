@@ -118,7 +118,7 @@ class TestAdaptersInit(unittest.TestCase):
                     ag_hooks = ag_hooks_raw["ags-hooks"]
                     self.assertIsInstance(ag_hooks["SessionStart"], list)
                     self.assertIsInstance(ag_hooks["Stop"], list)
-                    self.assertEqual(ag_hooks["PreToolUse"][0]["matcher"], "run_command")
+                    self.assertEqual(ag_hooks["PreToolUse"][0]["matcher"], "run_command|edit_file|write_file")
                     self.assertEqual(ag_hooks["PostToolUse"][0]["matcher"], "edit_file|write_file")
                     self.assertTrue((proj / ".agents" / "rules" / "ags-rules.md").is_file())
 
@@ -134,6 +134,7 @@ class TestAdaptersInit(unittest.TestCase):
                         self.assertTrue(body.strip())
                     ts_plugin = (proj / ".opencode" / "plugins" / "ags-hooks.ts").read_text(encoding="utf-8")
                     self.assertIn(".ags/cli.py", ts_plugin)
+                    self.assertIn("findAgsCli", ts_plugin)
                     self.assertIn("tool.execute.before", ts_plugin)
 
                     # Claude adapter validation

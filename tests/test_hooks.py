@@ -42,7 +42,12 @@ class TestHooksUnified(unittest.TestCase):
                     self.assertEqual(rc, 0, (harness, event, err))
                     self.assertEqual(err, "")
                     if harness == "antigravity":
-                        self.assertEqual(json.loads(out), {})
+                        if event == "pre_command":
+                            self.assertEqual(json.loads(out), {"decision": "allow"})
+                        elif event == "checkpoint_sync":
+                            self.assertEqual(json.loads(out), {"decision": ""})
+                        else:
+                            self.assertEqual(json.loads(out), {})
                     elif harness == "opencode":
                         data = json.loads(out)
                         self.assertTrue(data["allow"])
@@ -117,7 +122,7 @@ class TestHooksUnified(unittest.TestCase):
             self.assertIn("not valid JSON", codex_json["reason"])
             self.assertIn("NAMING:", codex_json["reason"])
 
-            # Antigravity camelCase toolCall
+            # Antigravity camelCase toolCall (PostToolUse contract expects empty JSON object {})
             ag_in = json.dumps({
                 "toolCall": {
                     "name": "write_file",
@@ -126,9 +131,7 @@ class TestHooksUnified(unittest.TestCase):
             })
             rc, out, _ = run_hook_cli("antigravity", "PostToolUse", ag_in, root=root)
             self.assertEqual(rc, 0)
-            ag_json = json.loads(out)
-            self.assertEqual(ag_json["decision"], "deny")
-            self.assertIn("not valid JSON", ag_json["reason"])
+            self.assertEqual(json.loads(out), {})
 
             # OpenCode
             oc_in = json.dumps({
