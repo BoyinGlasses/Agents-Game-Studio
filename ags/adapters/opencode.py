@@ -10,13 +10,35 @@ from ags.adapters.common import RoleSpec
 
 _OPENCODE_PLUGIN_TS = """\
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
-function runAgsHook(event: string, payload: unknown): Record<string, any> {
-  const out = execFileSync("python", [".ags/cli.py", "hook", "--harness", "opencode", event], {
-    input: JSON.stringify(payload ?? {}),
-    encoding: "utf-8",
-  }).trim();
-  return out ? JSON.parse(out) : {};
+function findAgsCli(startDir: string): string | null {
+  let dir = resolve(startDir);
+  while (true) {
+    const candidate = join(dir, ".ags", "cli.py");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+function runAgsHook(event: string, payload: Record<string, any>): Record<string, any> {
+  const startDir = typeof payload?.directory === "string" && payload.directory ? payload.directory : process.cwd();
+  const cliPath = findAgsCli(startDir);
+  if (!cliPath) return { allow: true, noop: true };
+  const rootDir = dirname(dirname(cliPath));
+  try {
+    const out = execFileSync("python", [".ags/cli.py", "hook", "--harness", "opencode", event], {
+      cwd: rootDir,
+      input: JSON.stringify(payload ?? {}),
+      encoding: "utf-8",
+    }).trim();
+    return out ? JSON.parse(out) : { allow: true };
+  } catch {
+    return { allow: true, noop: true };
+  }
 }
 
 export const AgsHooksPlugin = async ({ directory }: { directory: string }) => ({

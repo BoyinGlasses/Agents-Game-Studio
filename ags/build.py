@@ -21,13 +21,14 @@ _DEFAULT_PROMPT = "Initialize or advance a game project with Agents Game Studio.
 
 
 def _expected_root_hooks() -> dict[str, Any]:
-    """Generate Antigravity plugin-root camelCase hooks.json (no-op outside game project)."""
+    """Generate Antigravity plugin-root camelCase hooks.json (disabled globally; active per-project via .agents/hooks.json)."""
 
     def cmd(event: str) -> str:
         return f"python ags_cli.py hook --harness antigravity {event}"
 
     return {
         PACKAGE_NAME: {
+            "enabled": False,
             "SessionStart": [
                 {
                     "type": "command",
@@ -37,7 +38,7 @@ def _expected_root_hooks() -> dict[str, Any]:
             ],
             "PreToolUse": [
                 {
-                    "matcher": "run_command",
+                    "matcher": "run_command|edit_file|write_file",
                     "hooks": [
                         {
                             "type": "command",

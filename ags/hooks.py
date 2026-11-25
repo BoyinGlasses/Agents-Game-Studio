@@ -161,7 +161,7 @@ def _extract_edits(tool_input: dict[str, Any]) -> list[tuple[str, str]]:
             return parsed
 
     path_val = ""
-    for k in ("file_path", "filePath", "path", "TargetFile", "targetFile", "target_file"):
+    for k in ("file_path", "filePath", "path", "Path", "TargetFile", "targetFile", "target_file"):
         v = tool_input.get(k)
         if isinstance(v, str) and v.strip():
             path_val = _norm_path(v.strip())
@@ -170,6 +170,7 @@ def _extract_edits(tool_input: dict[str, Any]) -> list[tuple[str, str]]:
     content_val = ""
     for k in (
         "content",
+        "Content",
         "CodeContent",
         "codeContent",
         "new_string",
@@ -605,10 +606,23 @@ def _canonical_event_name(event: str) -> str:
     return mapping.get(event.lower(), event)
 
 
+def _resolve_hook_project_root(cwd_hint: str | None, explicit_root: Path | None) -> Path:
+    if explicit_root is not None:
+        return find_project_root(explicit_root)
+    base = find_project_root(cwd_hint)
+    if (base / "project.yaml").is_file():
+        return base
+    start = Path(cwd_hint).resolve() if cwd_hint else Path.cwd().resolve()
+    for anc in start.parents:
+        if (anc / "project.yaml").is_file() and (anc / ".ags").is_dir():
+            return anc
+    return base
+
+
 def evaluate_hook(harness: str, event: str, payload: dict[str, Any], root: Path | None = None) -> tuple[HookOutcome, str]:
     """Run the unified hook logic for `(harness, event)` and return `(HookOutcome, canonical_event)`."""
     cwd_hint = _extract_cwd(payload)
-    proj_root = find_project_root(cwd_hint if root is None and cwd_hint else root)
+    proj_root = _resolve_hook_project_root(cwd_hint, root)
     canon_event = _canonical_event_name(event)
 
     # Graceful no-op outside a game project
@@ -658,6 +672,10 @@ def format_hook_response(harness: str, event: str, outcome: HookOutcome) -> tupl
 
     if outcome.noop:
         if h == "antigravity":
+            if canon_event == "PreToolUse":
+                return 0, json.dumps({"decision": "allow"}), ""
+            if canon_event == "Stop":
+                return 0, json.dumps({"decision": ""}), ""
             return 0, json.dumps({}), ""
         if h == "opencode":
             return 0, json.dumps({"allow": True, "noop": True}), ""
@@ -715,14 +733,8 @@ def format_hook_response(harness: str, event: str, outcome: HookOutcome) -> tupl
         if canon_event == "Stop":
             if outcome.blocked:
                 return 0, json.dumps({"decision": "continue", "reason": outcome.message}), ""
-            if outcome.message:
-                return 0, json.dumps({"systemMessage": outcome.message}), ""
-            return 0, json.dumps({}), ""
-        # PostToolUse / PreCompact / PostCompact / story_gate
-        if outcome.blocked:
-            return 0, json.dumps({"decision": "deny", "reason": outcome.message}), ""
-        if outcome.message:
-            return 0, json.dumps({"systemMessage": outcome.message}), ""
+            return 0, json.dumps({"decision": ""}), ""
+        # PostToolUse / PreCompact / PostCompact / story_gate (Antigravity PostToolUse expects {})
         return 0, json.dumps({}), ""
 
     if h == "opencode":

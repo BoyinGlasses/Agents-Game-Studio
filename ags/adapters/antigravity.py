@@ -22,11 +22,18 @@ Read `AGENTS.md` at the repository root and `project.yaml` before starting work.
 
 
 def _agy_hook_cmd(event: str) -> str:
+    fb_expr = (
+        "{'decision':'allow'}"
+        if event == "PreToolUse"
+        else ("{'decision':''}" if event == "Stop" else "{}")
+    )
     return (
-        'python -c "import runpy,sys;from pathlib import Path;'
-        "p=next(d/'.ags/cli.py' for d in (Path.cwd(),*Path.cwd().parents) if (d/'.ags/cli.py').is_file());"
-        f"sys.argv=[str(p),'hook','--harness','antigravity','{event}'];"
-        'runpy.run_path(str(p),run_name=\'__main__\')"'
+        'python -c "import json,os,runpy,sys;from pathlib import Path;'
+        "p=next((d/'.ags/cli.py' for d in (Path.cwd(),*Path.cwd().parents) if (d/'.ags/cli.py').is_file()),None);"
+        f"sys.stdout.write(json.dumps({fb_expr})) if p is None else ("
+        "os.chdir(p.parent.parent),"
+        f"setattr(sys,'argv',[str(p),'hook','--harness','antigravity','{event}']),"
+        'runpy.run_path(str(p),run_name=\'__main__\'))"'
     )
 
 
@@ -49,7 +56,7 @@ def apply_antigravity(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:
             ],
             "PreToolUse": [
                 {
-                    "matcher": "run_command",
+                    "matcher": "run_command|edit_file|write_file",
                     "hooks": [
                         {
                             "type": "command",

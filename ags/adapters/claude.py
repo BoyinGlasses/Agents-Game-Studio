@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -30,7 +31,15 @@ def _yaml_quote(text: str) -> str:
 
 
 def _claude_hook_cmd(event: str) -> str:
-    return f'python "$CLAUDE_PROJECT_DIR/.ags/cli.py" hook --harness claude {event}'
+    py = "python" if os.name == "nt" else "python3"
+    return (
+        f'{py} -c "import os,runpy,sys;from pathlib import Path;'
+        "r=os.environ.get('CLAUDE_PROJECT_DIR');"
+        "cands=([Path(r)] if r else [])+[Path.cwd(),*Path.cwd().parents];"
+        "p=next((d/'.ags/cli.py' for d in cands if (d/'.ags/cli.py').is_file()),None);"
+        f"p and (os.chdir(p.parent.parent),setattr(sys,'argv',[str(p),'hook','--harness','claude','{event}']),"
+        "runpy.run_path(str(p),run_name='__main__'))\""
+    )
 
 
 def apply_claude(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:

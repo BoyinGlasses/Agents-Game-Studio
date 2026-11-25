@@ -1,5 +1,6 @@
 {
   "agents-game-studio": {
+    "enabled": false,
     "SessionStart": [
       {
         "type": "command",
@@ -9,7 +10,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "run_command",
+        "matcher": "run_command|edit_file|write_file",
         "hooks": [
           {
             "type": "command",

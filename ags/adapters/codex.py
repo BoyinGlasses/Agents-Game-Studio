@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -21,10 +22,10 @@ def _toml_escape_multiline(value: str) -> str:
 
 def _codex_hook_cmd(python_bin: str, event: str) -> str:
     return (
-        f'{python_bin} -c "import runpy,sys;from pathlib import Path;'
-        f"p=next(d/'.ags/cli.py' for d in (Path.cwd(),*Path.cwd().parents) if (d/'.ags/cli.py').is_file());"
-        f"sys.argv=[str(p),'hook','--harness','codex','{event}'];"
-        f"runpy.run_path(str(p),run_name='__main__')\""
+        f'{python_bin} -c "import os,runpy,sys;from pathlib import Path;'
+        f"p=next((d/'.ags/cli.py' for d in (Path.cwd(),*Path.cwd().parents) if (d/'.ags/cli.py').is_file()),None);"
+        f"p and (os.chdir(p.parent.parent),setattr(sys,'argv',[str(p),'hook','--harness','codex','{event}']),"
+        f"runpy.run_path(str(p),run_name='__main__'))\""
     )
 
 
@@ -78,12 +79,13 @@ def apply_codex(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:
     written.append(config_path)
 
     def _entry(matcher: str, event: str, timeout: int = 15) -> dict:
+        default_py = "python" if os.name == "nt" else "python3"
         return {
             "matcher": matcher,
             "hooks": [
                 {
                     "type": "command",
-                    "command": _codex_hook_cmd("python3", event),
+                    "command": _codex_hook_cmd(default_py, event),
                     "commandWindows": _codex_hook_cmd("python", event),
                     "timeout": timeout,
                 }
