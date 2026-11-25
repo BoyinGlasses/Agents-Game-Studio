@@ -21,8 +21,8 @@ _CLAUDE_MD = """\
 
 _EFFORT_TO_CLAUDE_MODEL = {
     "low": "haiku",
-    "medium": "sonnet",
-    "high": "opus",
+    "medium": "inherit",
+    "high": "inherit",
 }
 
 
@@ -55,7 +55,8 @@ def apply_claude(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:
     claude_md.write_text(_CLAUDE_MD, encoding="utf-8")
     written.append(claude_md)
 
-    for role in roles:
+    subagent_roles = [r for r in roles if r.category in ("core", "engine")]
+    for role in subagent_roles:
         is_ro = role.sandbox_mode == "read-only"
         tools = "Read, Grep, Glob" if is_ro else "Read, Write, Edit, Bash, Grep, Glob"
         model = _EFFORT_TO_CLAUDE_MODEL.get(role.model_reasoning_effort, "sonnet")

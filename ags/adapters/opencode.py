@@ -41,21 +41,39 @@ function runAgsHook(event: string, payload: Record<string, any>): Record<string,
   }
 }
 
-export const AgsHooksPlugin = async ({ directory }: { directory: string }) => ({
-  "session.created": async () => runAgsHook("SessionStart", { directory }),
-  "tool.execute.before": async (input: any, output: any) => {
-    const res = runAgsHook("PreToolUse", { directory, tool: input?.tool, input: output?.args ?? input });
-    if (res.blocked) throw new Error(res.reason || "Blocked by AGS pre-tool hook");
-  },
-  "tool.execute.after": async (input: any) => {
-    runAgsHook("PostToolUse", { directory, tool: input?.tool, input: input?.args ?? input });
-  },
-  "experimental.session.compacting": async (_input: any, output: any) => {
-    const res = runAgsHook("PreCompact", { directory });
-    if (res.additionalContext && Array.isArray(output?.context)) output.context.push(res.additionalContext);
-  },
-  "session.idle": async () => runAgsHook("Stop", { directory }),
-});
+export const AgsHooksPlugin = async ({ directory }: { directory: string }) => {
+  let compassSent = false;
+  return {
+    "session.created": async () => {
+      compassSent = false;
+      runAgsHook("SessionStart", { directory });
+    },
+    "experimental.chat.system.transform": async (_input: any, output: any) => {
+      if (compassSent) return;
+      const res = runAgsHook("SessionStart", { directory });
+      if (res.additionalContext && Array.isArray(output?.system)) {
+        output.system.push(res.additionalContext);
+        compassSent = true;
+      }
+    },
+    "tool.execute.before": async (input: any, output: any) => {
+      const res = runAgsHook("PreToolUse", { directory, tool: input?.tool, input: output?.args ?? input });
+      if (res.blocked) throw new Error(res.reason || "Blocked by AGS pre-tool hook");
+    },
+    "tool.execute.after": async (input: any, output: any) => {
+      const res = runAgsHook("PostToolUse", { directory, tool: input?.tool, input: input?.args ?? input });
+      const msg = res.blocked ? res.reason : res.additionalContext;
+      if (msg && output && typeof output.output === "string") {
+        output.output = `${output.output}\n\n[AGS PostToolUse]\n${msg}`;
+      }
+    },
+    "experimental.session.compacting": async (_input: any, output: any) => {
+      const res = runAgsHook("PreCompact", { directory });
+      if (res.additionalContext && Array.isArray(output?.context)) output.context.push(res.additionalContext);
+    },
+    "session.idle": async () => runAgsHook("Stop", { directory }),
+  };
+};
 
 export default AgsHooksPlugin;
 """
@@ -78,14 +96,15 @@ def apply_opencode(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:
     plugins_dir.mkdir(parents=True, exist_ok=True)
 
     agent_entries: dict[str, dict] = {}
-    for role in roles:
+    subagent_roles = [r for r in roles if r.category in ("core", "engine")]
+    for role in subagent_roles:
         is_ro = role.sandbox_mode == "read-only"
         agent_entries[role.name] = {
             "description": role.description,
             "mode": "subagent",
             "permission": {
                 "edit": "deny" if is_ro else "allow",
-                "bash": "ask" if is_ro else "allow",
+                "bash": "deny" if is_ro else "allow",
             },
         }
         md_text = (
@@ -95,6 +114,7 @@ def apply_opencode(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:
             "tools:\n"
             f"  write: {'false' if is_ro else 'true'}\n"
             f"  edit: {'false' if is_ro else 'true'}\n"
+            f"  bash: {'false' if is_ro else 'true'}\n"
             "---\n\n"
             f"{role.body}\n"
         )

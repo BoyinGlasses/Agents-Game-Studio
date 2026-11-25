@@ -46,7 +46,8 @@ def apply_codex(target_dir: Path, roles: list[RoleSpec]) -> list[Path]:
         "",
     ]
 
-    for role in roles:
+    subagent_roles = [r for r in roles if r.category in ("core", "engine")]
+    for role in subagent_roles:
         agent_path = agents_dir / f"{role.name}.toml"
         header = (
             f"Follow AGENTS.md, project.yaml, and .ags/rules/. "

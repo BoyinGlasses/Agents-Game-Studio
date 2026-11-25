@@ -98,10 +98,13 @@ class TestAdaptersInit(unittest.TestCase):
                             self.assertEqual(leaked, [], f"{other} roles leaked into {engine}: {leaked}")
 
                     # Codex adapter validation (.codex/config.toml, .codex/agents/*.toml, .codex/hooks.json)
+                    # Only core (12) + engine (5) = 17 subagents mounted; lenses stay in .ags/roles/
+                    expected_subagent_count = 17
+                    self.assertEqual(len(role_stems), 42)
                     cfg_toml = tomllib.loads((proj / ".codex" / "config.toml").read_text(encoding="utf-8"))
                     self.assertTrue(cfg_toml["features"]["multi_agent"])
                     codex_agents = list((proj / ".codex" / "agents").glob("*.toml"))
-                    self.assertEqual(len(codex_agents), len(role_stems))
+                    self.assertEqual(len(codex_agents), expected_subagent_count)
                     for agent_toml in codex_agents:
                         raw_toml = agent_toml.read_text(encoding="utf-8")
                         self.assertIn('developer_instructions = """', raw_toml)
@@ -125,9 +128,11 @@ class TestAdaptersInit(unittest.TestCase):
                     # OpenCode adapter validation
                     oc_cfg = json.loads((proj / "opencode.json").read_text(encoding="utf-8"))
                     self.assertIn("AGENTS.md", oc_cfg["instructions"])
-                    self.assertEqual(len(oc_cfg["agent"]), len(role_stems))
+                    self.assertEqual(len(oc_cfg["agent"]), expected_subagent_count)
+                    self.assertEqual(oc_cfg["agent"]["code-reviewer"]["permission"]["bash"], "deny")
+                    self.assertEqual(oc_cfg["agent"]["code-reviewer"]["permission"]["edit"], "deny")
                     oc_agents = list((proj / ".opencode" / "agents").glob("*.md"))
-                    self.assertEqual(len(oc_agents), len(role_stems))
+                    self.assertEqual(len(oc_agents), expected_subagent_count)
                     for oc_md in oc_agents:
                         meta, body = parse_frontmatter(oc_md.read_text(encoding="utf-8"))
                         self.assertEqual(meta["mode"], "subagent")
@@ -136,12 +141,17 @@ class TestAdaptersInit(unittest.TestCase):
                     self.assertIn(".ags/cli.py", ts_plugin)
                     self.assertIn("findAgsCli", ts_plugin)
                     self.assertIn("tool.execute.before", ts_plugin)
+                    self.assertIn("experimental.chat.system.transform", ts_plugin)
+                    self.assertIn("[AGS PostToolUse]", ts_plugin)
 
                     # Claude adapter validation
                     self.assertIn("@AGENTS.md", (proj / "CLAUDE.md").read_text(encoding="utf-8"))
                     claude_settings = json.loads((proj / ".claude" / "settings.json").read_text(encoding="utf-8"))
                     self.assertIn("SessionStart", claude_settings["hooks"])
-                    self.assertEqual(len(list((proj / ".claude" / "agents").glob("*.md"))), len(role_stems))
+                    claude_agents = list((proj / ".claude" / "agents").glob("*.md"))
+                    self.assertEqual(len(claude_agents), expected_subagent_count)
+                    rev_meta, _ = parse_frontmatter((proj / ".claude" / "agents" / "code-reviewer.md").read_text(encoding="utf-8"))
+                    self.assertEqual(rev_meta["model"], "inherit")
 
                     # Standalone `.ags/cli.py` works inside isolated temp project with no PYTHONPATH
                     env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
@@ -207,6 +217,38 @@ class TestAdaptersInit(unittest.TestCase):
                         "[AGS Compass]",
                         json.loads(a_hook.stdout)["injectSteps"][0]["systemMessage"]["systemMessage"],
                     )
+
+    def test_init_overwrite_guard_and_bundled_cli_hides_build(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = Path(tmp) / "guarded"
+            self._run_init(proj, engine="godot", harness="codex")
+            custom_yaml = 'schema_version: 1\nproject:\n  name: "DoNotWipe"\n'
+            (proj / "project.yaml").write_text(custom_yaml, encoding="utf-8")
+
+            # Second init without --force must fail and preserve project.yaml
+            blocked = subprocess.run(
+                [sys.executable, "-B", str(CLI_PATH), "init", str(proj), "--engine", "unity"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=30,
+            )
+            self.assertEqual(blocked.returncode, 2)
+            self.assertIn("ags sync", blocked.stderr)
+            self.assertEqual((proj / "project.yaml").read_text(encoding="utf-8"), custom_yaml)
+
+            # Bundled CLI hides framework-only `build` command
+            help_proc = subprocess.run(
+                [sys.executable, "-B", ".ags/cli.py", "--help"],
+                cwd=proj,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=30,
+            )
+            self.assertEqual(help_proc.returncode, 0)
+            self.assertNotIn("build", help_proc.stdout.split("positional arguments:")[0])
 
 
 if __name__ == "__main__":
