@@ -30,13 +30,25 @@ def find_core_dir(explicit_core: Path | str | None = None) -> Path:
             return cand
         raise FileNotFoundError(f"core directory not found: {cand}")
 
-    repo_core = Path(__file__).resolve().parents[1] / "core"
-    if repo_core.is_dir():
-        return repo_core
+    candidates: list[Path] = []
+    if not str(__file__).startswith("<ags-bundle:"):
+        mod_file = Path(__file__).resolve()
+        candidates.append(mod_file.parents[1] / "core")
+        candidates.append(mod_file.parent / "_core")
 
-    cwd_core = Path.cwd().resolve() / "core"
-    if cwd_core.is_dir():
-        return cwd_core
+    candidates.append(Path.cwd().resolve() / "core")
+    home = Path.home()
+    candidates.extend(
+        [
+            home / ".gemini" / "config" / "plugins" / "agents-game-studio" / "core",
+            home / ".codex" / "plugins" / "agents-game-studio" / "core",
+            home / ".agents" / "plugins" / "agents-game-studio" / "core",
+        ]
+    )
+
+    for cand in candidates:
+        if cand.is_dir():
+            return cand
 
     raise FileNotFoundError(
         "Unable to locate AGS `core/` directory. Pass `--core <path>` when running outside the AGS repo."
@@ -76,6 +88,7 @@ def run_init(
     rigor: str | None = None,
     name: str | None = None,
     core_dir: Path | str | None = None,
+    force: bool = False,
 ) -> dict[str, Any]:
     """Assemble a new AGS v2 game project into `target`."""
     eng = engine.strip().lower()
@@ -85,6 +98,16 @@ def run_init(
     selected_harnesses = parse_harnesses(harnesses)
     core_path = find_core_dir(core_dir)
     target_path = Path(target).resolve()
+
+    if target_path.exists() and not force:
+        if not target_path.is_dir():
+            raise ValueError(f"Target path exists and is not a directory: {target_path}")
+        existing_entries = [p.name for p in target_path.iterdir() if p.name != ".git"]
+        if (target_path / "project.yaml").is_file() or existing_entries:
+            raise ValueError(
+                f"Target directory already exists and is not empty: {target_path}. "
+                "Use `ags sync` to update an existing project, or pass `--force` to overwrite."
+            )
 
     roles = assemble_common(
         core_path,

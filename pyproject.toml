@@ -14,5 +14,14 @@ dependencies = []
 [project.scripts]
 ags = "ags.__main__:main"
 
-[tool.setuptools.packages.find]
-include = ["ags*"]
+[tool.setuptools]
+packages = ["ags", "ags.adapters", "ags._core"]
+include-package-data = false
+
+[tool.setuptools.package-dir]
+"ags" = "ags"
+"ags.adapters" = "ags/adapters"
+"ags._core" = "core"
+
+[tool.setuptools.package-data]
+"ags._core" = ["*", "*/*", "*/*/*", "*/*/*/*", "*/*/*/*/*"]

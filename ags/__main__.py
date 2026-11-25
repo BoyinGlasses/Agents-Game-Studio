@@ -62,6 +62,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_init.add_argument("--rigor", default=None, choices=["minimal", "standard", "full", "jam", "indie", "studio"])
     p_init.add_argument("--name", default=None, help="Game project name.")
     p_init.add_argument("--core", default=None, help="Explicit path to AGS core/ directory.")
+    p_init.add_argument("--force", action="store_true", help="Allow initializing into a non-empty directory.")
 
     # sync
     p_sync = sub.add_parser("sync", help="Sync existing game project with core/ and rebuild .ags/cli.py.")
@@ -127,10 +128,13 @@ def _build_parser() -> argparse.ArgumentParser:
     p_hook.add_argument("event", help="Hook event name (e.g. SessionStart, PreToolUse, PostToolUse, story_gate, Stop).")
     p_hook.add_argument("--root", default=None, help="Optional project root override.")
 
-    # build
-    p_bld = sub.add_parser("build", help="Compile core/skills -> skills/, root hooks.json, and plugin manifests.")
-    p_bld.add_argument("--check", action="store_true", help="Exit 0 only if all build outputs match core/.")
-    p_bld.add_argument("--root", default=None, help="Optional repository root override.")
+    # build (repo-only maintainer command; hidden in standalone bundled .ags/cli.py)
+    import ags as _ags_pkg
+
+    if not getattr(_ags_pkg, "_EMBEDDED_MODULES", None):
+        p_bld = sub.add_parser("build", help="Compile core/skills -> skills/, root hooks.json, and plugin manifests.")
+        p_bld.add_argument("--check", action="store_true", help="Exit 0 only if all build outputs match core/.")
+        p_bld.add_argument("--root", default=None, help="Optional repository root override.")
 
     return parser
 
@@ -152,6 +156,7 @@ def main(argv: list[str] | None = None) -> int:
                 rigor=args.rigor,
                 name=args.name,
                 core_dir=args.core,
+                force=args.force,
             )
         except (ValueError, FileNotFoundError) as exc:
             sys.stderr.write(f"ags init error: {exc}\n")
