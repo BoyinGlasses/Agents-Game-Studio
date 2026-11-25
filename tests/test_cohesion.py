@@ -410,6 +410,56 @@ class TestCohesion(unittest.TestCase):
         # Workflow catalog
         self.assertTrue((CORE / "workflow-catalog.yaml").is_file())
 
+    def test_all_core_markdown_files_clean_and_linked(self) -> None:
+        """Scan ALL core/**/*.md (including references/, CONTRACT.md, agents/, gates/, rules/, templates/)."""
+        role_stems = _all_role_stems()
+        skill_set = set(EXPECTED_SKILLS)
+        allowed_non_skill_ags = {"ags-hooks", "ags-rules", "ags-rotate", "ags-bundle", "ags-v2"}
+
+        all_core_mds = sorted(CORE.rglob("*.md"))
+        self.assertGreaterEqual(len(all_core_mds), 300)
+
+        for md_path in all_core_mds:
+            rel = str(md_path.relative_to(ROOT)).replace("\\", "/")
+            text = md_path.read_text(encoding="utf-8")
+            for label, pattern in FORBIDDEN_SKILL_PATTERNS:
+                m = pattern.search(text)
+                self.assertIsNone(
+                    m,
+                    f"{rel} contains forbidden token {label!r}: {m.group(0) if m else ''}",
+                )
+
+            if md_path.is_relative_to(SKILLS_DIR):
+                sdir = md_path.parent if md_path.parent.parent == SKILLS_DIR else md_path.parent.parent
+                for ref_path in re.findall(r"\breferences/[A-Za-z0-9_./-]+\.md\b", text):
+                    self.assertTrue(
+                        (sdir / ref_path).is_file(),
+                        f"{rel} references missing file {ref_path}",
+                    )
+                for tpl in re.findall(r"\.ags/templates/([A-Za-z0-9_./-]+\.md)\b", text):
+                    self.assertTrue(
+                        (TEMPLATES_DIR / tpl).is_file(),
+                        f"{rel} references missing template {tpl}",
+                    )
+                for gate in re.findall(r"\.ags/gates/([A-Za-z0-9_.-]+\.md)\b", text):
+                    self.assertTrue(
+                        (GATES_DIR / gate).is_file(),
+                        f"{rel} references missing gate {gate}",
+                    )
+                for role in re.findall(r"\.ags/roles/([a-z0-9-]+)\.md\b", text):
+                    self.assertIn(
+                        role,
+                        role_stems,
+                        f"{rel} references missing role {role}.md",
+                    )
+                for token in re.findall(r"\bags-[a-z0-9-]+\b", text):
+                    if token not in allowed_non_skill_ags:
+                        self.assertIn(
+                            token,
+                            skill_set,
+                            f"{rel} references unknown skill token {token!r}",
+                        )
+
     def test_build_check_passes(self) -> None:
         result = subprocess.run(
             [sys.executable, "-B", "-m", "ags.build", "--check"],

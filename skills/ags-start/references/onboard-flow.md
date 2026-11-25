@@ -122,4 +122,4 @@ Prompt to confirm starting `[recommended first step]` vs doing something else fi
 
 ## Phase 5: Hand Off
 
-When confirmed, output one short line: `Run <ags-skill command> to begin.` Verdict: **COMPLETE**.
+When confirmed, output one short line: `Run <chosen ags-* skill> to begin.` Verdict: **COMPLETE**.
