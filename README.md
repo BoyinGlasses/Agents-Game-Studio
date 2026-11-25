@@ -60,8 +60,8 @@ Receipts (.ags/state/receipt.json) ◄── Core + Engine + Lens Roles (.ags/ro
 Run directly from a clone, or install the `ags` console script locally:
 
 ```bash
-git clone https://github.com/BoyinGlasses/Codex-Game-Studio.git
-cd Codex-Game-Studio
+git clone https://github.com/BoyinGlasses/Agents-Game-Studio.git
+cd Agents-Game-Studio
 
 # Option A: install editable CLI (`ags` command)
 pip install -e .
@@ -73,7 +73,7 @@ python ags_cli.py --help
 For Codex plugin marketplace installation:
 
 ```bash
-codex plugin marketplace add BoyinGlasses/Codex-Game-Studio
+codex plugin marketplace add BoyinGlasses/Agents-Game-Studio
 codex plugin add agents-game-studio@agents-game-studio
 ```
 

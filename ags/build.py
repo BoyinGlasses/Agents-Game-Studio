@@ -81,7 +81,7 @@ def _updated_root_plugin(existing: dict[str, Any]) -> dict[str, Any]:
         "specialist roles, engine packs, project scaffold, and validation hooks."
     )
     data.setdefault("author", {"name": "BoyinGlasses"})
-    data.setdefault("repository", "https://github.com/BoyinGlasses/Codex-Game-Studio")
+    data["repository"] = "https://github.com/BoyinGlasses/Agents-Game-Studio"
     data.setdefault("license", "MIT")
     data["keywords"] = [
         "agents-game-studio",
@@ -150,6 +150,11 @@ def _updated_marketplace(existing: dict[str, Any]) -> dict[str, Any]:
     if plugins:
         first = dict(plugins[0])
         first["name"] = PACKAGE_NAME
+        src = dict(first.get("source") or {})
+        src["source"] = "url"
+        src["url"] = "https://github.com/BoyinGlasses/Agents-Game-Studio.git"
+        src.setdefault("ref", "main")
+        first["source"] = src
         plugins[0] = first
     else:
         plugins = [
@@ -157,7 +162,7 @@ def _updated_marketplace(existing: dict[str, Any]) -> dict[str, Any]:
                 "name": PACKAGE_NAME,
                 "source": {
                     "source": "url",
-                    "url": "https://github.com/BoyinGlasses/Codex-Game-Studio.git",
+                    "url": "https://github.com/BoyinGlasses/Agents-Game-Studio.git",
                     "ref": "main",
                 },
                 "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
